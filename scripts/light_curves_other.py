@@ -140,7 +140,7 @@ for oi, obj in enumerate(plotting.other_objs):
     )
 
     # Set title
-    fig.suptitle(pa.basename(fitsname).replace(".fits", "").split("_")[-1])
+    axd["LC"].set_title(obj)
 
     # Savefig and close
     plt.tight_layout()

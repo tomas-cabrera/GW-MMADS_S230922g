@@ -6,6 +6,8 @@ import numpy as np
 from astropy.io import fits
 from astropy.time import Time
 from light_curves import plot_light_curve, plot_light_curve_from_file
+import sncosmo
+
 from utils import paths, plotting
 from utils.stamps import plot_stamp
 
@@ -31,8 +33,8 @@ for oi, obj in enumerate(plotting.spectra_objs):
             ["SPEC", "DIFF"],
             ["SPEC", "DIFF"],
         ],
-        width_ratios=[2, 1],
-        figsize=(6, 4),
+        width_ratios=[3, 1],
+        figsize=(7, 4),
         gridspec_kw={
             "hspace": 0,
             "wspace": 0,
@@ -87,7 +89,7 @@ for oi, obj in enumerate(plotting.spectra_objs):
     x = 110
     y = 110
     bar = 20
-    label_offset = 10 
+    label_offset = 10
     kw_arrow = {
         "head_width": 5,
         "head_length": 7,
@@ -135,7 +137,7 @@ for oi, obj in enumerate(plotting.spectra_objs):
     ax.xaxis.set_label_position("top")
     ax.xaxis.tick_top()
 
-    # Plot circle indicating the time of the max snr
+    # Plot square indicating the time of the max snr
     ax.plot(
         maxsnr_row["MJD_OBS"],
         maxsnr_row["MAG_FPHOT"],
@@ -162,29 +164,70 @@ for oi, obj in enumerate(plotting.spectra_objs):
         spec = np.loadtxt(sf)
         wl = spec[:, 0]
         flux = spec[:, 1]
-        flux /= np.nanmedian(flux)
-        flux -= count
+        flux_norm = flux / np.nanmedian(flux)
+        flux_norm -= count
+        yyyymmdd = pa.basename(sf).split("_")[1].split(".")[0]
+        spectime = Time(yyyymmdd, format="isot").mjd
 
         # Make label
-        yyyymmdd = pa.basename(sf).split("_")[1].split(".")[0]
         label = f"{yyyymmdd}, {plotting.spectra_instruments[obj][yyyymmdd]}"
 
         # Plot spectra
         spectra_artist = ax.plot(
             wl,
-            flux,
+            flux_norm,
             label=label,
             lw=1,
         )
 
         # Add vertical line to photometry plot
         axd["LC"].axvline(
-            x=Time(yyyymmdd, format="isot").mjd,
+            x=spectime,
             zorder=0,
             color=spectra_artist[0].get_color(),
         )
 
         count += 1
+
+        # Add photometry for 6400 Keck spectrum
+        if "C202309242206400m275139_2023-12-07" in sf:
+            # Calculate photometry for spectrum
+            bin_edges = np.zeros(len(wl) + 1)
+            bin_edges[1:-1] = (wl[1:] + wl[:-1]) / 2
+            bin_edges[0] = wl[0] - (wl[1] - wl[0]) / 2
+            bin_edges[-1] = wl[-1] + (wl[-1] - wl[-2]) / 2
+            spec_sncosmo = sncosmo.Spectrum(bin_edges=bin_edges, flux=flux)
+            specphot = {"time": spectime}
+            for b in np.unique(data["FILTER"]):
+                # Ignore nan
+                if b == "N/A":
+                    continue
+
+                try:
+                    specphot[b] = spec_sncosmo.bandmag(f"des{b}", "ab")
+                except ValueError as e:
+                    print(f"Error: {e}")
+                    continue
+
+            # Plot spectra photometry
+            for b, mag in specphot.items():
+                if b == "time":
+                    continue
+                plot_light_curve(
+                    [
+                        specphot["time"],
+                    ],
+                    [
+                        specphot[b],
+                    ],
+                    [
+                        0,
+                    ],
+                    b,
+                    ax=axd["LC"],
+                    marker="x",
+                    markersize=8,
+                )
 
     # Auxiliary
     ax.set_xlabel("Wavelength (A)")
@@ -195,7 +238,7 @@ for oi, obj in enumerate(plotting.spectra_objs):
     ax.legend(loc="lower right", frameon=False)
 
     # Set title
-    # fig.suptitle(pa.basename(fitsname).replace(".fits", "").split("_")[-1])
+    # fig.suptitle(obj)
 
     # Save figure
     plt.tight_layout()

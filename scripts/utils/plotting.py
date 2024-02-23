@@ -36,18 +36,27 @@ spectra_instruments = {
     "C202309242206400m275139": {"2023-12-07": "Keck-LRIS", "2023-12-25": "GN-GMOS"},
 }
 
+tol_bright = list(tc.tol_cset("bright"))
+band2color = {
+    "g": tol_bright[2],
+    "i": tol_bright[3],
+}
+
 # Detection type plot keywords
 kw_dettag = {
     "m": {
         "marker": "v",
         "markerfacecolor": "none",
+        "markersize": 5,
     },
     "q": {
         "marker": "o",
         # "marker": "h",
         # "markerfacecolor": "none",
+        "markersize": 5,
     },
     "p": {
         "marker": "o",
+        "markersize": 5,
     },
 }

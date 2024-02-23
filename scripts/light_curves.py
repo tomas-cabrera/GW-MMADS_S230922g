@@ -2,9 +2,9 @@ import os.path as pa
 from glob import glob
 
 import matplotlib.pyplot as plt
-from matplotlib.lines import Line2D
 import numpy as np
 from astropy.io import fits
+from matplotlib.lines import Line2D
 from utils import paths, plotting
 
 ###############################################################################
@@ -16,7 +16,7 @@ def plot_light_curve(
     flux_err,
     band,
     ax=None,
-    band2color={"g": "xkcd:green", "i": "xkcd:goldenrod"},
+    band2color=plotting.band2color,
     **kwargs,
 ):
     if ax is None:
@@ -30,7 +30,7 @@ def plot_light_curve(
 def plot_light_curve_from_file(
     fitsname,
     ax=None,
-    band2color={"g": "xkcd:green", "i": "xkcd:goldenrod"},
+    band2color=plotting.band2color,
     plot_legend=True,
     **kwargs,
 ):
