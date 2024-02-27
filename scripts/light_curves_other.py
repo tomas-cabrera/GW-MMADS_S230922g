@@ -121,7 +121,7 @@ for oi, obj in enumerate(plotting.other_objs):
     ### Light curve plot
     ax = axd["LC"]
     # Plot photometry
-    if oi == 0:
+    if obj == "T202310262246447m281410":
         plot_light_curve_from_file(fitsname, ax=ax)
     else:
         plot_light_curve_from_file(fitsname, ax=ax, plot_legend=False)
