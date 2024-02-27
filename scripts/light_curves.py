@@ -68,15 +68,17 @@ def plot_light_curve_from_file(
                 # Select data
                 if d == "m":
                     y = lim_mag_5
+                    y_err = np.zeros_like(y)
                 else:
                     y = flux
+                    y_err = flux_err
                 # Define mask
                 mask = filter_mask & (y < 25) & (data["STATUS_FPHOT"] == d)
                 # Plot
                 plot_light_curve(
                     time[mask],
                     y[mask],
-                    flux_err[mask],
+                    y_err[mask],
                     f,
                     ax=ax,
                     band2color=band2color,
