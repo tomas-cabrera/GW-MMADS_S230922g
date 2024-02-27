@@ -79,7 +79,7 @@ for oi, obj in enumerate(plotting.other_objs):
     x = 110
     y = 110
     bar = 20
-    label_offset = 10 
+    label_offset = 10
     kw_arrow = {
         "head_width": 5,
         "head_length": 7,

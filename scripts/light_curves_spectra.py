@@ -213,6 +213,7 @@ for oi, obj in enumerate(plotting.spectra_objs):
             for b, mag in specphot.items():
                 if b == "time":
                     continue
+                print(b, mag)
                 plot_light_curve(
                     [
                         specphot["time"],

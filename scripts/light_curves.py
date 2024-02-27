@@ -35,9 +35,19 @@ def plot_light_curve_from_file(
     **kwargs,
 ):
     with fits.open(fitsname) as hdul:
+        # Load data
         data = hdul[1].data
+
+        # Remove bad expnames
+        mask_is_bad_expname = np.array(
+            [s in plotting.BAD_EXPNAMES for s in data["SCIENCE_NAME"]]
+        )
+        data = data[~mask_is_bad_expname]
+
+        # Get time, flux, flux_err
         time = data["MJD_OBS"]
         flux = data["MAG_FPHOT"]
+        lim_mag_5 = data["LIM_MAG5"]
         flux_err = data["MAGERR_FPHOT"]
 
         if ax is None:
@@ -52,14 +62,20 @@ def plot_light_curve_from_file(
 
             # Get filter mask
             filter_mask = data["FILTER"] == f
-            mag_mask = data["MAG_FPHOT"] <= 25.0
 
             # Iterate over detection types
             for d in ["m", "q", "p"]:
-                mask = filter_mask & mag_mask & (data["STATUS_FPHOT"] == d)
+                # Select data
+                if d == "m":
+                    y = lim_mag_5
+                else:
+                    y = flux
+                # Define mask
+                mask = filter_mask & (y < 25) & (data["STATUS_FPHOT"] == d)
+                # Plot
                 plot_light_curve(
                     time[mask],
-                    flux[mask],
+                    y[mask],
                     flux_err[mask],
                     f,
                     ax=ax,
