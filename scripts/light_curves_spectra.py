@@ -209,26 +209,26 @@ for oi, obj in enumerate(plotting.spectra_objs):
                     print(f"Error: {e}")
                     continue
 
-            # Plot spectra photometry
-            for b, mag in specphot.items():
-                if b == "time":
-                    continue
-                print(b, mag)
-                plot_light_curve(
-                    [
-                        specphot["time"],
-                    ],
-                    [
-                        specphot[b],
-                    ],
-                    [
-                        0,
-                    ],
-                    b,
-                    ax=axd["LC"],
-                    marker="x",
-                    markersize=8,
-                )
+            # # Plot spectra photometry
+            # for b, mag in specphot.items():
+            #     if b == "time":
+            #         continue
+            #     print(b, mag)
+            #     plot_light_curve(
+            #         [
+            #             specphot["time"],
+            #         ],
+            #         [
+            #             specphot[b],
+            #         ],
+            #         [
+            #             0,
+            #         ],
+            #         b,
+            #         ax=axd["LC"],
+            #         marker="x",
+            #         markersize=8,
+            #     )
 
     # Auxiliary
     ax.set_xlabel("Wavelength (A)")
