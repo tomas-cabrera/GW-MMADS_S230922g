@@ -4,8 +4,8 @@ from glob import glob
 import matplotlib.pyplot as plt
 import numpy as np
 from astropy.io import fits
-from light_curves import plot_light_curve, plot_light_curve_from_file
 from utils import paths, plotting
+from utils.light_curves import plot_light_curve, plot_light_curve_from_file
 from utils.stamps import plot_stamp
 
 ###############################################################################

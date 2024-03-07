@@ -2,12 +2,11 @@ import argparse
 
 import matplotlib.pyplot as plt
 import numpy as np
-from astropy.io import fits
 from astropy import units as u
+from astropy.io import fits
 from astropy.table import Table
 from scipy.optimize import curve_fit
-from utils import plotting
-import light_curves
+from utils import light_curves, plotting
 
 ###############################################################################
 
