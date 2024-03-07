@@ -126,9 +126,6 @@ if __name__ == "__main__":
         data_phot_filt = data_phot[mask_filter]
 
         # Calculate flux
-        # data_phot_filt["FLUX"] = 10 ** (
-        #     -0.4 * (data_phot_filt["MAG_FPHOT"] - data_phot_filt["ZP_FPHOT"][-1])
-        # )
         data_phot_filt["FLUX"] = light_curves.mag_to_flux(
             data_phot_filt["MAG_FPHOT"],
             band=filt,
@@ -174,9 +171,6 @@ if __name__ == "__main__":
         data_phot_filt = data_phot[data_phot["FILTER"] == filt]
 
         # Calculate flux
-        # data_phot_filt["FLUX"] = 10 ** (
-        #     -0.4 * (data_phot_filt["MAG_FPHOT"] - data_phot_filt["ZP_FPHOT"][-1])
-        # )
         data_phot_filt["FLUX"] = light_curves.mag_to_flux(
             data_phot_filt["MAG_FPHOT"],
             band=filt,

@@ -4,10 +4,38 @@ from glob import glob
 import matplotlib.pyplot as plt
 import numpy as np
 from astropy.io import fits
+from astropy import units as u
 from matplotlib.lines import Line2D
 from utils import paths, plotting
 
 ###############################################################################
+
+
+# Source: https://noirlab.edu/science/programs/ctio/filters/Dark-Energy-Camera
+band2central_wavelength = {
+    "u": 355.0 * u.nm,
+    "g": 473.0 * u.nm,
+    "r": 642.0 * u.nm,
+    "i": 784.0 * u.nm,
+    "z": 926.0 * u.nm,
+    "Y": 1009.0 * u.nm,
+    "VR": 626.0 * u.nm,
+}
+
+
+def mag_to_flux(
+    mag,
+    band=None,
+    mag_unit=u.ABmag,
+    flux_unit=u.erg / u.s / u.cm**2 / u.AA,
+    central_wavelength=None,  # Central wavelength of the band
+):
+    # Get central wavelength if needed
+    if central_wavelength is None:
+        central_wavelength = band2central_wavelength[band]
+
+    mag_temp = mag * mag_unit
+    return mag_temp.to(flux_unit, u.spectral_density(central_wavelength)).value
 
 
 def plot_light_curve(
