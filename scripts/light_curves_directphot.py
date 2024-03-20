@@ -1,3 +1,4 @@
+import os
 import os.path as pa
 from glob import glob
 
@@ -13,11 +14,14 @@ from utils.stamps import plot_stamp
 ###############################################################################
 
 # Iterate over DECam photometry files
-DECAM_DIR = paths.PHOTOMETRY_DIR / "DECam"
+# DECAM_DIR = paths.PHOTOMETRY_DIR / "DECam"
+DECAM_DIR = "/home/tomas/academia/projects/decam_followup_O4/S230922g/data/decam/2024-01-03_shortlist/Candidates_directphot"
+objs = os.listdir(DECAM_DIR)
+objs = [o.split("_")[-1].split(".")[0] for o in objs]
 figpaths = []
-for oi, obj in enumerate(plotting.other_objs):
+for oi, obj in enumerate(objs):
     # Get the first file that matches the object name
-    glob_str = str(DECAM_DIR / f"*{obj}.fits")
+    glob_str = f"{DECAM_DIR}/*{obj}.fits"
     fitsname = glob(glob_str)[0]
     print(fitsname)
 
@@ -147,6 +151,10 @@ for oi, obj in enumerate(plotting.other_objs):
     figpath = paths.script_to_fig(
         __file__, suffix=f"_{pa.basename(fitsname).replace('.fits', '')}"
     )
+    figpath = __file__.replace(
+        "/GW-MMADS_S230922g/scripts",
+        "/data/decam/2024-01-03_shortlist/light_curves_directphot",
+    ).replace(".py", f"_{obj}.png")
     plt.tight_layout()
     plt.savefig(figpath)
     plt.close()

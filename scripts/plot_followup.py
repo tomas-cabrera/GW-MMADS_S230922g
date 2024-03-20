@@ -17,6 +17,7 @@ from utils import paths, plotting
 
 ###############################################################################
 
+
 def compute_contours(proportions, samples):
     """Plot containment contour around desired level. E.g 90% containment of a
     PDF on a healpix map.
@@ -112,10 +113,12 @@ def plot_coverage(
         llcrnrlat=dec_c - angsize,
         urcrnrlon=ra_c - angsize,
         urcrnrlat=dec_c + angsize,
+        meridians=False,
+        parallels=False,
     )
 
     # Draw grid
-    grid_spacing = 5
+    grid_spacing = 10
     grid_presets = np.arange(0, 360, grid_spacing)
     grid_presets = np.concatenate([grid_presets, -grid_presets[1:]])
     meridians = [x for x in grid_presets if x > ra_c - angsize and x < ra_c + angsize]
@@ -129,7 +132,7 @@ def plot_coverage(
     for k, mer in mers.items():
         mer[1][0].set_text(f"{k}°")
     parallels = [x for x in grid_presets if x > dec_c - angsize and x < dec_c + angsize]
-    m.draw_parallels(
+    pars = m.draw_parallels(
         parallels,
         labelstyle="+/-",
         labels=[1, 0, 0, 0],
@@ -158,29 +161,30 @@ def plot_coverage(
     )
 
     ### Plot contours
-    nsidemax = 256
-    if nside > nsidemax:
-        map_b_coarse = hp.pixelfunc.ud_grade(
-            map_b["PROB"].value, nsidemax, order_in="NESTED"
-        )
-        map_b_coarse = map_b_coarse / np.sum(map_b_coarse)
-    else:
-        map_b_coarse = map_b["PROB"].value
-    ra_contour, dec_contour = compute_contours(levels, map_b_coarse)
-    for level, ra, dec, ls in zip(
-        levels, ra_contour, dec_contour, level_linestyles[: len(levels)]
-    ):
-        x, y = m.projtran(ra, dec)
-        m.plot(
-            x,
-            y,
-            color="xkcd:purple",
-            lw=2,
-            label=f"{level*100:.0f}%",
-            ls=ls,
-            alpha=0.5,
-            rasterized=True,
-        )
+    if levels is not None:
+        nsidemax = 256
+        if nside > nsidemax:
+            map_b_coarse = hp.pixelfunc.ud_grade(
+                map_b["PROB"].value, nsidemax, order_in="NESTED"
+            )
+            map_b_coarse = map_b_coarse / np.sum(map_b_coarse)
+        else:
+            map_b_coarse = map_b["PROB"].value
+        ra_contour, dec_contour = compute_contours(levels, map_b_coarse)
+        for level, ra, dec, ls in zip(
+            levels, ra_contour, dec_contour, level_linestyles[: len(levels)]
+        ):
+            x, y = m.projtran(ra, dec)
+            m.plot(
+                x,
+                y,
+                color="xkcd:purple",
+                lw=2,
+                label=f"{level*100:.0f}\% CR",
+                ls=ls,
+                alpha=0.5,
+                rasterized=True,
+            )
 
     ### Plot coverage
     for fn in os.listdir(obsplan_dir):
@@ -205,34 +209,55 @@ def plot_coverage(
                 rasterized=True,
             )
 
-        # Draw circles around cherrypicked fields 
-        if df1.shape[0] < 10:
-            for _, row in df1.iterrows():
-                m.tissot(
-                    row["ra"],
-                    row["dec"],
-                    DECAM,
-                    100,
-                    facecolor="none",
-                    edgecolor="k",
-                    zorder=2,
-                    alpha=0.5,
-                    rasterized=True,
-                )
+        # # Draw circles around cherrypicked fields
+        # if df1.shape[0] < 10:
+        #     for _, row in df1.iterrows():
+        #         m.tissot(
+        #             row["ra"],
+        #             row["dec"],
+        #             DECAM,
+        #             100,
+        #             facecolor="none",
+        #             edgecolor="k",
+        #             zorder=2,
+        #             alpha=0.5,
+        #             rasterized=True,
+        #         )
+
+    # Plot human-vetted candidates
+    candidate_names = plotting.tns_names.keys()
+    cand_coords = np.array([plotting.candname_to_radec(c) for c in candidate_names])
+    x, y = m.projtran(cand_coords[:, 0], cand_coords[:, 1])
+    ax.plot(
+        x,
+        y,
+        "x",
+        color="k",
+        label="Candidates",
+    )
 
     # Labels, legend
     ax.set_xlabel("RA [deg]", labelpad=20)
     ax.set_ylabel("dec [deg]", labelpad=30)
-    ax.legend(title=f"{fil}-band", frameon=False, loc="upper right")
+    ax.legend(
+        # title=f"{fil}-band",
+        # frameon=False,
+        loc="upper right",
+    )
 
     # Save plot
     plt.tight_layout()
     plt.savefig(paths.script_to_fig(__file__, suffix=f"_{fil}"), dpi=300)
+    plt.close()
 
 
 ###############################################################################
 
 obsplan_dir = f"{paths.data}/obsplan"
 
-plot_coverage(obsplan_dir, paths.SKYMAP_FLATTENED, angsize=12, fil="g")
-plot_coverage(obsplan_dir, paths.SKYMAP_FLATTENED, angsize=12, fil="i")
+# plot_coverage(
+#     obsplan_dir, paths.SKYMAP_FLATTENED, angsize=14, fil="g"
+# )  # , levels=None)
+plot_coverage(
+    obsplan_dir, paths.SKYMAP_FLATTENED, angsize=14, fil="i"
+)  # , levels=None)

@@ -1,7 +1,9 @@
 import argparse
-from pathlib import Path
 import math
+import os
+import os.path as pa
 from glob import glob
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -9,6 +11,7 @@ import pandas as pd
 from astropy import units as u
 from astropy.io import fits
 from astropy.table import Table
+from matplotlib.lines import Line2D
 from scipy.optimize import curve_fit
 from utils import light_curves, paths, plotting
 
@@ -99,12 +102,27 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     DECAM_DIR = paths.PHOTOMETRY_DIR / "DECam"
+    DECAM_DIR = Path(
+        "/home/tomas/academia/projects/decam_followup_O4/S230922g/data/decam/2024-01-03_shortlist/Candidates"
+    )
+    DIRECTPHOT_DIR = Path(
+        "/home/tomas/academia/projects/decam_followup_O4/S230922g/data/decam/2024-01-03_shortlist/Candidates_directphot"
+    )
+    objs = os.listdir(DECAM_DIR)
+    objs = [o.split("_")[-1].split(".")[0] for o in objs]
     df_master = []
-    for c in plotting.other_objs:
+    start = True
+    for obj in objs:
+        # Jump forward to object
+        if not start:
+            if obj != "A202309242245227m262607":
+                continue
+            else:
+                start = True
 
         ### Difference photometry
         # Get the first file that matches the object name
-        glob_str = str(DECAM_DIR / f"*{c}.fits")
+        glob_str = str(DECAM_DIR / f"*{obj}.fits")
         fitsname = glob(glob_str)[0]
         print(fitsname)
 
@@ -123,11 +141,66 @@ if __name__ == "__main__":
         )
         data_phot = data_phot[~mask_is_bad_expname]
 
+        ### Direct photometry
+        # Get the first file that matches the object name
+        glob_str = str(DIRECTPHOT_DIR / f"*{obj}.fits")
+        fitsname = glob(glob_str)[0]
+        # print(fitsname)
+
+        # Read in photometry
+        with fits.open(fitsname) as hdul:
+            data_directphot = Table(hdul[1].data)
+
+        # Drop nans
+        data_directphot = data_directphot[
+            ~np.isnan(data_directphot["MAG_FPHOT"])
+            & ~np.isnan(data_directphot["MJD_OBS"])
+        ]
+
+        # Remove bad expnames
+        mask_is_bad_expname = np.array(
+            [s in plotting.BAD_EXPNAMES for s in data_directphot["SCIENCE_NAME"]]
+        )
+        data_directphot = data_directphot[~mask_is_bad_expname]
+
+        for dfp in data_phot["SCIENCE_NAME"]:
+            if dfp not in data_directphot["SCIENCE_NAME"]:
+                print(f"\t{dfp[0]} NOT IN DIRECTPHOT")
+
         ##############################
         ###  Calc. SF probability  ###
         ##############################
 
         # Initialize plot
+        plt.close()
+        handles = [
+            Line2D(
+                [0],
+                [0],
+                color="k",
+                marker="o",
+                alpha=0.3,
+                label="Direct",
+            ),
+            Line2D(
+                [0],
+                [0],
+                color="k",
+                ls=":",
+                marker="o",
+                markerfacecolor="none",
+                alpha=0.3,
+                label="Diff",
+            ),
+            Line2D(
+                [0],
+                [0],
+                color="k",
+                marker="X",
+                markerfacecolor="none",
+                label="SF",
+            ),
+        ]
         fig, axd = plt.subplot_mosaic(
             [
                 ["LC", "LC"],
@@ -142,114 +215,176 @@ if __name__ == "__main__":
             # Select filter data
             data_phot_filt = data_phot[(data_phot["FILTER"] == filt)]
             data_phot_filt.sort("MJD_OBS")
+            data_directphot_filt = data_directphot[(data_directphot["FILTER"] == filt)]
+            data_directphot_filt.sort("MJD_OBS")
 
             # Plot photometry
             nondetections = data_phot_filt["STATUS_FPHOT"] == "m"
             axd["LC"].plot(
                 data_phot_filt[~nondetections]["MJD_OBS"],
                 data_phot_filt[~nondetections]["MAG_FPHOT"],
-                label=f"{filt}",
-                ls="",
+                # label=f"{filt}",
+                ls=":",
                 marker="o",
+                markerfacecolor="none",
                 color=plotting.band2color[filt],
                 alpha=0.3,
             )
             axd["LC"].plot(
                 data_phot_filt[nondetections]["MJD_OBS"],
                 data_phot_filt[nondetections]["MAG_FPHOT"],
-                label=f"{filt}",
+                # label=f"{filt}",
                 ls="",
                 marker="v",
+                markerfacecolor="none",
+                color=plotting.band2color[filt],
+                alpha=0.3,
+            )
+            nondetections_directphot = data_directphot_filt["STATUS_FPHOT"] == "m"
+            axd["LC"].plot(
+                data_directphot_filt[~nondetections_directphot]["MJD_OBS"],
+                data_directphot_filt[~nondetections_directphot]["MAG_FPHOT"],
+                # label=f"{filt}",
+                # ls=":",
+                marker="o",
+                # markerfacecolor="none",
+                color=plotting.band2color[filt],
+                alpha=0.3,
+            )
+            axd["LC"].plot(
+                data_directphot_filt[nondetections_directphot]["MJD_OBS"],
+                data_directphot_filt[nondetections_directphot]["MAG_FPHOT"],
+                # label=f"{filt}",
+                ls="",
+                marker="v",
+                # markerfacecolor="none",
                 color=plotting.band2color[filt],
                 alpha=0.3,
             )
 
             ### Calculate structure function probabilities
-            erfc_vec = np.vectorize(math.erfc)
+            def erfc_half(x):
+                return math.erfc(x) / 2
 
-            ## Dimmest before maximum, minimum sf prob
-            # Get index for brightest observation
-            ibright = np.nanargmin(data_phot_filt["MAG_FPHOT"])
-            # Get index for dimmest observation before brightest; default to 0
-            try:
-                idim = np.nanargmax(
-                    data_phot_filt[
-                        data_phot_filt["MJD_OBS"] < data_phot_filt[ibright]["MJD_OBS"]
-                    ]["MAG_FPHOT"]
-                )
-            except:
-                idim = 0
-            data_phot_filt_detections = data_phot_filt[~nondetections]
-            # Get time deltas, enforcing a minimum of 1 day (to avoid deltas from the same night)
-            deltats = (
-                data_phot_filt_detections["MJD_OBS"] - data_phot_filt["MJD_OBS"][idim]
-            )
-            deltats = np.maximum(deltats, deltats / np.abs(deltats))
-            # Get magnitude deltas
-            deltams = (
-                data_phot_filt_detections["MAG_FPHOT"]
-                - data_phot_filt["MAG_FPHOT"][idim]
-            )
-            # Calculate SF probabilities
-            sfs = (
-                light_curves.KIMURA20_SF_PARAMS.loc[filt, "SF0"]
-                * (deltats / light_curves.KIMURA20_SF_PARAMS.loc[filt, "dt0"])
-                ** light_curves.KIMURA20_SF_PARAMS.loc[filt, "bt"]
-            )
-            sf_zscores = -deltams / sfs
-            sf_prob = erfc_vec(sf_zscores)
-            # Find minimum sf prob
-            print(sf_prob)
-            try:
-                sf_prob_min = np.nanmin(sf_prob)
-                ipair = np.nanargmin(sf_prob)
-                sf_zscores_opt = sf_zscores[ipair]
-            except ValueError:
-                sf_prob_min = np.nan
-                ipair = 0
-                sf_zscores_opt = np.nan
-            ipair = np.where(
-                data_phot_filt["SCIENCE_NAME"]
-                == data_phot_filt_detections[ipair]["SCIENCE_NAME"]
-            )[0][0]
-            imin = [idim, ipair]
-            print(imin)
+            erfc_vec = np.vectorize(erfc_half)
 
-            # # Maximum sf prob
-            # deltats = np.subtract.outer(
-            #     data_phot_filt["MJD_OBS"], data_phot_filt["MJD_OBS"]
+            # ## Dimmest before maximum, minimum sf prob
+            # # Get index for brightest observation
+            # ibright = np.nanargmin(data_phot_filt["MAG_FPHOT"])
+            # # Get index for dimmest observation before brightest; default to 0
+            # try:
+            #     idim = np.nanargmax(
+            #         data_phot_filt[
+            #             data_phot_filt["MJD_OBS"]
+            #             < data_phot_filt[ibright]["MJD_OBS"]
+            #         ]["MAG_FPHOT"]
+            #     )
+            # except:
+            #     idim = 0
+            # data_phot_filt_detections = data_phot_filt[~nondetections]
+            # # Get time deltas, enforcing a minimum of 1 day (to avoid deltas from the same night)
+            # deltats = (
+            #     data_phot_filt_detections["MJD_OBS"]
+            #     - data_phot_filt["MJD_OBS"][idim]
             # )
             # deltats = np.maximum(deltats, deltats / np.abs(deltats))
-            # deltams = np.subtract.outer(
-            #     data_phot_filt["MAG_FPHOT"], data_phot_filt["MAG_FPHOT"]
+            # # Get magnitude deltas
+            # deltams = (
+            #     data_phot_filt_detections["MAG_FPHOT"]
+            #     - data_phot_filt["MAG_FPHOT"][idim]
             # )
+            # # Calculate SF probabilities
             # sfs = (
             #     light_curves.KIMURA20_SF_PARAMS.loc[filt, "SF0"]
             #     * (deltats / light_curves.KIMURA20_SF_PARAMS.loc[filt, "dt0"])
             #     ** light_curves.KIMURA20_SF_PARAMS.loc[filt, "bt"]
             # )
-            # sf_prob = erfc_vec(-deltams / sfs)
-            # print(sf_prob)
+            # sf_zscores = -deltams / sfs
+            # sf_prob = erfc_vec(sf_zscores)
+            # # Find minimum sf prob
+            # # print(sf_prob)
             # try:
-            #     imin = np.nanargmin(sf_prob)
+            #     sf_prob_min = np.nanmin(sf_prob)
+            #     ipair = np.nanargmin(sf_prob)
+            #     sf_zscores_opt = sf_zscores[ipair]
+            # except ValueError:
+            #     sf_prob_min = np.nan
+            #     ipair = 0
+            #     sf_zscores_opt = np.nan
+            # ipair = np.where(
+            #     data_phot_filt["SCIENCE_NAME"]
+            #     == data_phot_filt_detections[ipair]["SCIENCE_NAME"]
+            # )[0][0]
+            # imin = [idim, ipair]
+            # # print(imin)
+            # ## Calculate sf_prob for directphot
+            # idim_direct = np.where(
+            #     data_directphot_filt["SCIENCE_NAME"]
+            #     == data_phot_filt[idim]["SCIENCE_NAME"]
+            # )
+            # ipair_direct = np.where(
+            #     data_directphot_filt["SCIENCE_NAME"]
+            #     == data_phot_filt[ipair]["SCIENCE_NAME"]
+            # )
+            # deltat_direct = (
+            #     data_directphot_filt[ipair]["MJD_OBS"]
+            #     - data_directphot_filt[idim]["MJD_OBS"]
+            # )
+            # deltam_direct = (
+            #     data_directphot_filt[ipair]["MAG_FPHOT"]
+            #     - data_directphot_filt[idim]["MAG_FPHOT"]
+            # )
+            # sf_direct = (
+            #     light_curves.KIMURA20_SF_PARAMS.loc[filt, "SF0"]
+            #     * (deltat_direct / light_curves.KIMURA20_SF_PARAMS.loc[filt, "dt0"])
+            #     ** light_curves.KIMURA20_SF_PARAMS.loc[filt, "bt"]
+            # )
+            # sf_zscore_direct = -deltam_direct / sf_direct
+            # sf_prob_direct = erfc_half(sf_zscore_direct)
+            # print("\tSF_PROB:", sf_prob_min, sf_prob_direct)
+
+            ## Maximum sf prob
+            # Calculate deltas
+            deltats = np.subtract.outer(
+                data_directphot_filt["MJD_OBS"], data_directphot_filt["MJD_OBS"]
+            )
+            deltams = np.subtract.outer(
+                data_directphot_filt["MAG_FPHOT"], data_directphot_filt["MAG_FPHOT"]
+            )
+            # Ignore deltats <= 1
+            mask = deltats > 1
+            deltats[~mask] = np.nan
+            deltams[~mask] = np.nan
+            # Calculate structure functions
+            sfs = (
+                light_curves.KIMURA20_SF_PARAMS.loc[filt, "SF0"]
+                * (deltats / light_curves.KIMURA20_SF_PARAMS.loc[filt, "dt0"])
+                ** light_curves.KIMURA20_SF_PARAMS.loc[filt, "bt"]
+            )
+            sf_frac = -deltams / sfs
+            sf_prob = erfc_vec(sf_frac)
+            # try:
+            imin = np.nanargmin(sf_prob)
             # except ValueError:
             #     imin = 0
-            # print(imin)
-            # imin = list(np.unravel_index(imin, sf_prob.shape))
-            # print(imin)
-            # Plot sf_prob
-            # axd[k].imshow(sf_prob)
+            imin = list(np.unravel_index(imin, sf_prob.shape))
+            sf_prob_min = sf_prob[*imin]
+            sf_zscores_opt = sf_frac[*imin]
+            # print(filt, sf_zscores_opt, sf_prob_min)
 
             # Plot photometry
-            axd["LC"].plot(
-                data_phot_filt[imin]["MJD_OBS"],
-                data_phot_filt[imin]["MAG_FPHOT"],
-                label=f"{filt}",
+            sigma = axd["LC"].plot(
+                # data_phot_filt[imin]["MJD_OBS"],
+                # data_phot_filt[imin]["MAG_FPHOT"],
+                data_directphot_filt[imin]["MJD_OBS"],
+                data_directphot_filt[imin]["MAG_FPHOT"],
+                label=f"{sf_zscores_opt:.2f}$\sigma$",
                 # ls="",
-                marker="s",
+                marker="X",
                 markerfacecolor="none",
                 color=plotting.band2color[filt],
             )
+            handles.append(sigma[0])
 
             # Add params to df
             df_sfparams.append(
@@ -265,9 +400,15 @@ if __name__ == "__main__":
         axd["LC"].set_xlabel("Time")
         axd["LC"].set_ylabel("Mag")
         axd["LC"].invert_yaxis()
-        # plt.legend(loc="upper left", bbox_to_anchor=(1, 1))
+        axd["LC"].set_title(obj)
+        plt.legend(handles=handles, loc="upper left", bbox_to_anchor=(1, 1))
         plt.tight_layout()
         # plt.show()
+        plt.savefig(
+            paths.figures
+            / "fit_flare_directphot"
+            / pa.basename(__file__).replace(".py", f"_{obj}.png")
+        )
         plt.close()
 
         ##############################
@@ -317,7 +458,7 @@ if __name__ == "__main__":
                     np.inf,
                 ],
             )
-            print(bounds)
+            # print(bounds)
             try:
                 fit_params = fit_flare(
                     ts,
@@ -327,7 +468,7 @@ if __name__ == "__main__":
                     bounds=bounds,
                 )[0]
             except Exception as e:
-                print(f"ERROR FITTING {c}:{filt}; ERROR: {e}")
+                print(f"ERROR FITTING {obj}:{filt}; ERROR: {e}")
                 fit_params = [np.nan] * 5
 
             # Downscale flux params
@@ -407,12 +548,12 @@ if __name__ == "__main__":
         df_fitparams = pd.DataFrame(df_fitparams).set_index("band")
         df_sfparams = pd.DataFrame(df_sfparams).set_index("band")
         df_params = pd.concat([df_fitparams, df_sfparams], axis=1)
-        df_params.to_csv(paths.output / f"{c}_fitparams.csv")
+        # df_params.to_csv(paths.output / f"{c}_fitparams.csv")
 
         # Save to master df
-        df_params["object"] = c
+        df_params["object"] = obj
         df_master.append(df_params)
 
     # Save master df
     df_master = pd.concat(df_master)
-    df_master.to_csv(paths.output / "fitparams_master.csv")
+    # df_master.to_csv(paths.output / "fitparams_master.csv")

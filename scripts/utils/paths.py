@@ -2,6 +2,7 @@
 Exposes common paths useful for manipulating datasets and generating figures.
 
 """
+
 from pathlib import Path
 
 # Absolute path to the top level of the repository
@@ -35,6 +36,7 @@ PHOTOMETRY_DIR = data / "photometry"
 SPECTRA_DIR = data / "spectra"
 
 ###############################################################################
+
 
 def script_to_fig(script, suffix=""):
     return script.replace("scripts", "tex/figures").replace(".py", suffix + ".pdf")

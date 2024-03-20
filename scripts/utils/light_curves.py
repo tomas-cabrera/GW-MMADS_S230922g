@@ -3,8 +3,10 @@ from glob import glob
 
 import matplotlib.pyplot as plt
 import numpy as np
-from astropy.io import fits
+import pandas as pd
 from astropy import units as u
+from astropy.io import fits
+from scipy.stats import norm
 from matplotlib.lines import Line2D
 from utils import paths, plotting
 
@@ -22,6 +24,10 @@ band2central_wavelength = {
     "VR": 626.0 * u.nm,
 }
 
+KIMURA20_SF_PARAMS = pd.read_csv(
+    paths.data / "photometry" / "kimura20_SFparams.dat", delim_whitespace=True
+).set_index("band")
+
 
 def mag_to_flux(
     mag,
@@ -36,6 +42,40 @@ def mag_to_flux(
 
     mag_temp = mag * mag_unit
     return mag_temp.to(flux_unit, u.spectral_density(central_wavelength)).value
+
+
+def calc_sf_chance_probability_kimura20(
+    deltat,
+    deltamag,
+    band,
+):
+    prob = calc_sf_chance_probability(
+        deltat,
+        deltamag,
+        band,
+        sf0=KIMURA20_SF_PARAMS.loc[band, "SF0"],
+        t0=KIMURA20_SF_PARAMS.loc[band, "dt0"],
+        bt=KIMURA20_SF_PARAMS.loc[band, "bt"],
+    )
+
+    return prob
+
+
+def calc_sf_chance_probability(
+    deltat,
+    deltamag,
+    band,
+    sf0,
+    t0,
+    bt,
+):
+    # Calculate SF for deltat
+    sf_deltat = sf0 * (deltat / t0) ** bt
+
+    # Calculate probability of deltamag given SF
+    prob = 1 - norm(0, sf_deltat).cdf(deltamag)
+
+    return prob
 
 
 def plot_light_curve(

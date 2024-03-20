@@ -230,7 +230,7 @@ for oi, obj in enumerate(plotting.spectra_objs):
             #     )
 
     # Auxiliary
-    ax.set_xlabel("Wavelength (A)")
+    ax.set_xlabel(r"Observed wavelength ($\AA$)")
     if len(spectra_files) > 1:
         ax.set_ylabel("Norm. flux + offset")
     else:
