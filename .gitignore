@@ -3,3 +3,11 @@ data
 !data/graham23
 !data/obsplan
 !data/skymaps
+
+# tex output files
+tex/figures/*
+tex/output/*
+tex/tables/*
+
+# pycache
+**/__pycache__
