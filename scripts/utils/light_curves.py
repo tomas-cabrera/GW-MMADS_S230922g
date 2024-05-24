@@ -6,6 +6,7 @@ from glob import glob
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import sncosmo
 from astropy import units as u
 from astropy.io import fits
 from astropy.table import Table
@@ -30,17 +31,19 @@ band2central_wavelength = {
 }
 
 KIMURA20_SF_PARAMS = pd.read_csv(
-    paths.data / "photometry" / "kimura20_SFparams.dat", delim_whitespace=True
+    paths.data / "photometry" / "kimura20_SFparams.dat", sep="\s+"
 ).set_index("band")
 
 
 def get_bandpass(filter):
     """Generic function to get bandpass data for a given filter.
+    DECam source: https://www.ctio.noirlab.edu/noao/node/13140
 
     Parameters
     ----------
     filter : str
         A string of the format f"{instrument}-{filter}".
+        Can also be "sncosmo-{key}" to get the respective data from the sncomsmo package.
 
     Returns
     -------
@@ -63,6 +66,11 @@ def get_bandpass(filter):
         bandpass = bandpass[["#LAMBDA", fil]]
         bandpass.rename(
             columns={"#LAMBDA": "lambda", fil: "transmission"}, inplace=True
+        )
+    elif instrument == "sncosmo":
+        bandpass = copy(sncosmo.get_bandpass(fil))
+        bandpass = pd.DataFrame(
+            {"lambda": bandpass.wave / u.AA, "transmission": bandpass(bandpass.wave)}
         )
     else:
         raise ValueError(f"Unknown instrument: {instrument}")
@@ -321,7 +329,7 @@ def get_light_curve(objid, instrument):
                 magerr = data["MAGERR_FPHOT"]
                 filter = data["FILTER"]
         elif instrument == "SkyMapper":
-            data = pd.read_csv(lc_path, delim_whitespace=True)
+            data = pd.read_csv(lc_path, sep="\s+")
 
             def yyyymmddhhmmss_to_isot(yyyymmddhhmmss):
                 return datetime.datetime.strptime(
@@ -337,10 +345,10 @@ def get_light_curve(objid, instrument):
             filter = data["Filter"]
         elif instrument == "Wendelstein":
             data = Table.read(lc_path, format="ascii.ecsv")
-            mjd = data["MJD_OBS"]
-            mag = data["MAG_AUTO_DIFF"]
-            magerr = data["MAGERR_AUTO_DIFF"]
-            filter = data["FILTER"]
+            mjd = data["MJD_OBS"].value
+            mag = data["MAG_AUTO_DIFF"].value
+            magerr = data["MAGERR_AUTO_DIFF"].value
+            filter = data["FILTER"].value
         else:
             raise ValueError(f"Unknown instrument: {instrument}")
     elif type(lc_path) is list:

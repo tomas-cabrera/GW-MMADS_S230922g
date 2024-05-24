@@ -1,3 +1,4 @@
+import os
 import os.path as pa
 from glob import glob
 
@@ -14,7 +15,7 @@ from scripts.utils.stamps import plot_stamp
 ###############################################################################
 
 # Iterate over DECam photometry files
-DECAM_DIR = paths.PHOTOMETRY_DIR / "DECam"
+DECAM_DIR = paths.PHOTOMETRY_DIR / "DECam" / "diffphot"
 figpaths = []
 for oi, obj in enumerate(plotting.other_objs):
     # Get the first file that matches the object name
@@ -143,12 +144,13 @@ for oi, obj in enumerate(plotting.other_objs):
 
     # Set title
     axd["LC"].set_title(obj)
+    plt.tight_layout()
 
     # Savefig and close
     figpath = paths.script_to_fig(
-        __file__, suffix=f"_{pa.basename(fitsname).replace('.fits', '')}"
+        __file__, key=f"{pa.basename(fitsname).replace('.fits', '')}"
     )
-    plt.tight_layout()
+    os.makedirs(pa.dirname(figpath), exist_ok=True)
     plt.savefig(figpath)
     plt.close()
 
@@ -190,6 +192,6 @@ for figpath in figpaths:
 figsettex += figsetend
 
 # Write to file
-texpath = __file__.replace("/scripts/", "/tex/").replace(".py", ".figset.tex")
+texpath = paths.script_to_fig(__file__, key="figset").replace(".pdf", ".tex")
 with open(texpath, "w") as f:
     f.write(figsettex)

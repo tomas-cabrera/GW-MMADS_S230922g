@@ -248,7 +248,9 @@ def plot_coverage(
 
     # Save plot
     plt.tight_layout()
-    plt.savefig(paths.script_to_fig(__file__, suffix=f"_{fil}"), dpi=300)
+    figpath = paths.script_to_fig(__file__, key=f"{fil}")
+    os.makedirs(os.path.dirname(figpath), exist_ok=True)
+    plt.savefig(figpath, dpi=300)
     plt.close()
 
 

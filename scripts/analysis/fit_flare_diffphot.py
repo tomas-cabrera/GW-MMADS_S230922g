@@ -73,11 +73,12 @@ def calc_total_energy(
     ValueError
         _description_
     """
+    inst, fil = filter.split("-")
 
     ### Spectral flux density time integral ###
 
     # Convert AB mags to spectral flux densities
-    sfdensities = abmag_to_specfluxdensity(mag_phots)
+    sfdensities = (mag_phots * u.ABmag).to(u.erg / u.s / u.cm**2 / u.Hz).value
 
     # Calculate integral via trapezoidal rule
     time_integral = np.trapz(sfdensities, (times * u.day).to(u.s).value)
@@ -109,11 +110,29 @@ def calc_total_energy(
     total_energy *= 4 * np.pi * (cosmo.luminosity_distance(z)).to(u.cm).value ** 2
 
     # Convert band luminosity to bolometric luminosity (values from Duras+20)
-    fil = filter.split("-")[1]
-    if fil in list("ugrizYUBV"):
-        total_energy *= 5.15
+    # If inst == sncosmo, scale Duras+20 5.15 factor by relative transmission between filters
+    if inst == "sncosmo":
+        # Integrate B bandpass
+        bandpass_B = light_curves.get_bandpass("sncosmo-bessellb")
+        bandpass_B["nu"] = (
+            (bandpass_B["lambda"].values * u.AA)
+            .to(u.Hz, equivalencies=u.spectral())
+            .value
+        )
+        argsort = np.argsort(bandpass_B["nu"])
+        bandpass_B = bandpass_B.iloc[argsort]
+        bandpass_B_integral = np.trapz(
+            bandpass_B["transmission"],
+            bandpass_B["nu"],
+        )
+        # Scale bolometric correction
+        bolometric_correction = 5.15 * bandpass_B_integral / bandpass_integral
+    # Else, just use 5.15 factor
+    elif fil in list("ugrizYUBV"):
+        bolometric_correction = 5.15
     else:
-        raise ValueError(f"Filter [{fil}] not recognized.")
+        raise ValueError(f"Filter [{filter}] not recognized.")
+    total_energy *= bolometric_correction
 
     ### Error propagation ###
 
@@ -240,7 +259,7 @@ if __name__ == "__main__":
 
     # Iterate over objects
     df_master = []
-    for objid in plotting.other_objs:
+    for objid in candidates_table["objid"]:
         print("*" * 60)
         print(objid)
 
@@ -326,6 +345,8 @@ if __name__ == "__main__":
             if objid in candidates_table["objid"].values:
                 z = candidates_table["z"][candidates_table["objid"] == objid].values[0]
             else:
+                z = np.nan
+            if np.isnan(z):
                 print(
                     f"Calc. total energy: Redshift not found for {objid}; setting to 0.1."
                 )
@@ -349,7 +370,8 @@ if __name__ == "__main__":
                 times=data_phot_etot["MJD_OBS"],
                 mag_phots=data_phot_etot["MAG_FPHOT"],
                 mag_phot_errs=None,
-                filter=f"DECam-{filt}",
+                # filter=f"DECam-{filt}",
+                filter=f"sncosmo-des{filt}",
                 z=z,
                 z_err=None,
             )
@@ -361,13 +383,14 @@ if __name__ == "__main__":
                     "total_energy_err": total_energy_err,
                 }
             )
+            print(f"Total energy (error): {total_energy:.2e} ({total_energy_err}) ergs")
 
             # Shade integral area on plot
 
             axd["LC"].fill_between(
                 data_phot_etot["MJD_OBS"],
                 data_phot_etot["MAG_FPHOT"],
-                np.nanmax(data_phot_etot["MAG_FPHOT"]),
+                np.nanmax(data_phot_etot[~nondetections]["MAG_FPHOT"]),
                 alpha=0.3,
                 color=plotting.band2color[filt],
             )
@@ -550,7 +573,7 @@ if __name__ == "__main__":
         axd["LC"].invert_yaxis()
         # plt.legend(loc="upper left", bbox_to_anchor=(1, 1))
         plt.tight_layout()
-        plt.show()
+        # plt.show()
         plt.close()
 
         # Combine params and save as csv

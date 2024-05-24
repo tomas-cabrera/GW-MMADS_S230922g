@@ -42,8 +42,8 @@ SPECTRA_DIR = data / "spectra"
 ###############################################################################
 
 
-def script_to_fig(script, suffix=""):
-    return script.replace("scripts", "tex/figures").replace(".py", suffix + ".pdf")
+def script_to_fig(script, key=""):
+    return script.replace("scripts", "tex").replace(".py", "") + f"/{key}.pdf"
 
 
 def glob_plus(globstr, require_one=False):

@@ -150,7 +150,7 @@ for oi, obj in enumerate(objs):
 
     # Savefig and close
     figpath = paths.script_to_fig(
-        __file__, suffix=f"_{pa.basename(fitsname).replace('.fits', '')}"
+        __file__, key=f"_{pa.basename(fitsname).replace('.fits', '')}"
     )
     figpath = __file__.replace(
         "/GW-MMADS_S230922g/scripts",
@@ -198,6 +198,6 @@ for figpath in figpaths:
 figsettex += figsetend
 
 # Write to file
-texpath = __file__.replace("/scripts/", "/tex/").replace(".py", ".figset.tex")
+texpath = paths.script_to_fig(__file__, key="figset").replace(".pdf", ".tex")
 with open(texpath, "w") as f:
     f.write(figsettex)

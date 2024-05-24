@@ -1,3 +1,4 @@
+import os
 import os.path as pa
 from glob import glob
 
@@ -16,7 +17,7 @@ from scripts.utils.stamps import plot_stamp
 ###############################################################################
 
 # Iterate over DECam photometry files
-DECAM_DIR = paths.PHOTOMETRY_DIR / "DECam"
+DECAM_DIR = paths.PHOTOMETRY_DIR / "DECam" / "diffphot"
 for oi, obj in enumerate(plotting.spectra_objs):
     # Get the first file that matches the object name
     glob_str = str(DECAM_DIR / f"*{obj}.fits")
@@ -243,9 +244,9 @@ for oi, obj in enumerate(plotting.spectra_objs):
 
     # Save figure
     plt.tight_layout()
-    plt.savefig(
-        paths.script_to_fig(
-            __file__, suffix=f"_{pa.basename(fitsname).replace('.fits', '')}"
-        )
+    figpath = paths.script_to_fig(
+        __file__, key=f"{pa.basename(fitsname).replace('.fits', '')}"
     )
+    os.makedirs(pa.dirname(figpath), exist_ok=True)
+    plt.savefig(figpath)
     plt.close()

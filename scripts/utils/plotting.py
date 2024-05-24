@@ -85,10 +85,10 @@ band2color = {
 }
 
 kw_instruments = {
-    "DECam": {},
-    "SkyMapper": {},
-    "Wendelstein": {},
-    "WISE": {},
+    "DECam": {"marker": "h"},
+    "SkyMapper": {"marker": "s"},
+    "Wendelstein": {"marker": "D"},
+    "WISE": {"marker": "X"},
 }
 
 # Detection type plot keywords
