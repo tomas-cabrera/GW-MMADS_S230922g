@@ -1,7 +1,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import tol_colors as tc
-from . import paths
+
+from scripts.utils import paths
 
 ###############################################################################
 
@@ -73,9 +74,21 @@ spectra_instruments = {
 }
 
 tol_bright = list(tc.tol_cset("bright"))
+tol_dark = list(tc.tol_cset("dark"))
 band2color = {
     "g": tol_bright[2],
+    "r": tol_bright[1],
     "i": tol_bright[3],
+    "z": tol_bright[5],
+    "W1": tol_dark[3],
+    "W2": tol_dark[1],
+}
+
+kw_instruments = {
+    "DECam": {},
+    "SkyMapper": {},
+    "Wendelstein": {},
+    "WISE": {},
 }
 
 # Detection type plot keywords

@@ -1,4 +1,6 @@
+import datetime
 import os.path as pa
+from copy import copy
 from glob import glob
 
 import matplotlib.pyplot as plt
@@ -6,9 +8,12 @@ import numpy as np
 import pandas as pd
 from astropy import units as u
 from astropy.io import fits
-from scipy.stats import norm
+from astropy.table import Table
+from astropy.time import Time
 from matplotlib.lines import Line2D
-from utils import paths, plotting
+from scipy.stats import norm
+
+from scripts.utils import paths, plotting
 
 ###############################################################################
 
@@ -29,11 +34,48 @@ KIMURA20_SF_PARAMS = pd.read_csv(
 ).set_index("band")
 
 
-def mag_to_flux(
+def get_bandpass(filter):
+    """Generic function to get bandpass data for a given filter.
+
+    Parameters
+    ----------
+    filter : str
+        A string of the format f"{instrument}-{filter}".
+
+    Returns
+    -------
+    _type_
+        _description_
+
+    Raises
+    ------
+    ValueError
+        _description_
+    """
+    # Parse filter
+    instrument, fil = filter.split("-")
+
+    # Load data
+    if instrument == "DECam":
+        bandpass = pd.read_csv(
+            paths.data / "photometry" / "DECam" / "bandpasses.txt", sep="\s+"
+        )
+        bandpass = bandpass[["#LAMBDA", fil]]
+        bandpass.rename(
+            columns={"#LAMBDA": "lambda", fil: "transmission"}, inplace=True
+        )
+    else:
+        raise ValueError(f"Unknown instrument: {instrument}")
+
+    # Return
+    return bandpass
+
+
+def mag2fluxdensity(
     mag,
     band=None,
     mag_unit=u.ABmag,
-    flux_unit=u.erg / u.s / u.cm**2 / u.AA,
+    fluxdensity_unit=u.erg / u.s / u.cm**2 / u.AA,
     central_wavelength=None,  # Central wavelength of the band
 ):
     # Get central wavelength if needed
@@ -41,7 +83,22 @@ def mag_to_flux(
         central_wavelength = band2central_wavelength[band]
 
     mag_temp = mag * mag_unit
-    return mag_temp.to(flux_unit, u.spectral_density(central_wavelength)).value
+    return mag_temp.to(fluxdensity_unit, u.spectral_density(central_wavelength)).value
+
+
+def fluxdensity2mag(
+    fluxdensity,
+    band=None,
+    fluxdensity_unit=u.erg / u.s / u.cm**2 / u.AA,
+    mag_unit=u.ABmag,
+    central_wavelength=None,  # Central wavelength of the band
+):
+    # Get central wavelength if needed
+    if central_wavelength is None:
+        central_wavelength = band2central_wavelength[band]
+
+    fluxdensity_temp = fluxdensity * fluxdensity_unit
+    return fluxdensity_temp.to(mag_unit, u.spectral_density(central_wavelength)).value
 
 
 def calc_sf_chance_probability_kimura20(
@@ -212,3 +269,125 @@ def plot_light_curve_from_file(
         )
         if plot_legend:
             ax.legend(handles=legend_elements, loc="lower center", ncols=2)
+
+
+def get_light_curve_path(objid, instrument, wise_data="Processed_Data"):
+    ### Get path
+    lc_path = None
+    instpath = f"{paths.data}/photometry/{instrument}"
+    if instrument == "DECam":
+        globstr = f"{instpath}/*_{objid}.fits"
+        lc_path = paths.glob_plus(globstr, require_one=True)
+    elif instrument == "SkyMapper":
+        lc_path = f"{instpath}/{objid}.dat"
+    elif instrument == "Wendelstein":
+        lc_path = f"{instpath}/{paths.EVENTNAME}/{objid}/{objid}.ecsv"
+    elif instrument == "WISE":
+        # Try to get TNS name
+        try:
+            objid_wise = plotting.tns_names[objid]
+        except KeyError:
+            objid_wise = objid
+        globstr = f"{instpath}/{objid_wise}*"
+        wise_obj_path = paths.glob_plus(globstr, require_one=True)
+        wise_objid = pa.basename(wise_obj_path)
+        if wise_data == "Processed_Data":
+            globstr = (
+                f"{instpath}/{wise_objid}/{wise_objid}/{wise_data}/*_Mags_File.ascii"
+            )
+            lc_path = paths.glob_plus(globstr)
+        elif wise_data == "Raw_Data":
+            globstr = (
+                f"{instpath}/{wise_objid}/{wise_objid}/Raw_Data/{wise_objid}*.ascii"
+            )
+            lc_path = paths.glob_plus(globstr)
+    else:
+        raise ValueError(f"Unknown instrument: {instrument}")
+
+    return lc_path
+
+
+def get_light_curve(objid, instrument):
+    # Get path
+    lc_path = get_light_curve_path(objid, instrument)
+
+    # Load data
+    if type(lc_path) is str:
+        if instrument == "DECam":
+            with fits.open(lc_path) as hdul:
+                data = hdul[1].data
+                mjd = data["MJD_OBS"]
+                mag = data["MAG_FPHOT"]
+                magerr = data["MAGERR_FPHOT"]
+                filter = data["FILTER"]
+        elif instrument == "SkyMapper":
+            data = pd.read_csv(lc_path, delim_whitespace=True)
+
+            def yyyymmddhhmmss_to_isot(yyyymmddhhmmss):
+                return datetime.datetime.strptime(
+                    yyyymmddhhmmss, "%Y%m%d%H%M%S"
+                ).isoformat()
+
+            def yyyymmddhhmmss_to_mjd(yyyymmddhhmmss):
+                return Time(yyyymmddhhmmss_to_isot(yyyymmddhhmmss), format="isot").mjd
+
+            mjd = data["ImageID"].apply(lambda x: yyyymmddhhmmss_to_mjd(str(x)))
+            mag = data["Magnitude_APC05"]
+            magerr = data["MAgnitude_APC05_err"]
+            filter = data["Filter"]
+        elif instrument == "Wendelstein":
+            data = Table.read(lc_path, format="ascii.ecsv")
+            mjd = data["MJD_OBS"]
+            mag = data["MAG_AUTO_DIFF"]
+            magerr = data["MAGERR_AUTO_DIFF"]
+            filter = data["FILTER"]
+        else:
+            raise ValueError(f"Unknown instrument: {instrument}")
+    elif type(lc_path) is list:
+        mjd = []
+        mag = []
+        magerr = []
+        filter = []
+        for p in lc_path:
+            if instrument == "WISE":
+                data = Table.read(p, format="ascii")
+                if "Processed_Data" in p:
+                    # Get band name
+                    band = pa.basename(p).split("_")[2]
+                    # Get data
+                    mjd.extend(data[f"{band}MJD"])
+                    mag.extend(data[f"{band}ApparentMag"])
+                    magerr.extend(data[f"{band}ApparentMagErr"])
+                    filter.extend([band] * len(data))
+                elif "Raw_Data" in p:
+                    for i in list("12"):
+                        # Get column names
+                        magcols = [f"w{i}mpro", f"w{i}pro_ep"]
+                        j = 0
+                        try:
+                            while magcols[j] not in data.colnames:
+                                j += 1
+                        except IndexError:
+                            raise ValueError(f"Could not find mag column for W{i}")
+                        magcol = magcols[j]
+                        magerrcol = magcol.replace("mpro", "sigmpro")
+                        # Get data
+                        mjd.extend(data["mjd"])
+                        mjd.extend(data[f"mjd"])
+                        mag.extend(data[magcol])
+                        magerr.extend(data[magerrcol])
+                        filter.extend([f"W{i}"] * len(data["mjd"]))
+            else:
+                raise ValueError(f"Unknown instrument: {instrument}")
+
+    # Assemble df
+    data = pd.DataFrame(
+        {
+            "mjd": mjd,
+            "mag": mag,
+            "magerr": magerr,
+            "filter": filter,
+        }
+    )
+
+    return data
