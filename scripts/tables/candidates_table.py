@@ -85,6 +85,14 @@ INTERNAL_ZS = {
     "C202309242248405m134956": (0.128, 3.757e-5),
 }
 
+NONCANDIDATES_POSTPROCESSING = [
+    "T202309242242458m241023",
+    "T202309242242259m162742",  # fast transient, no tailing nondetection
+    "T202310032224474m305703",  # "kilonova", tailing nondetection
+    "T202309242207149m242500",
+    "T202309242258081m201140",
+]
+
 ####################################################################################################
 
 # Load data
@@ -198,6 +206,11 @@ mask = mask & np.array([gets_bluer(i) for i in df_sa.index])
 ### Remove rows with high skymap_z_zscores
 # (inverting the mask ensures that all rows with nan zs are kept)
 mask = mask & ~(np.abs(df_sa["skymap_z_zscore"]) > 3)
+
+### Remove noncandidates
+mask = mask & ~df_sa.index.isin(NONCANDIDATES_POSTPROCESSING)
+
+### Apply mask
 df_sa = df_sa[mask]
 
 # Select columns
