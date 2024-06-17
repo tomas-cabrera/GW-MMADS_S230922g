@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from astropy import units as u
-from astropy.cosmology import Planck15
+from astropy.cosmology import Planck18
 from astropy.io import fits
 from astropy.table import Table
 from scipy.optimize import curve_fit
@@ -42,7 +42,7 @@ def calc_total_energy(
     filter,
     z,
     z_err,
-    cosmo=Planck15,
+    cosmo=Planck18,
 ):
     """Calculates the total energy emitted in a light curve, in ergs.
 
@@ -437,6 +437,8 @@ if __name__ == "__main__":
             try:
                 sf_prob_min = np.nanmin(sf_prob)
                 ipair = np.nanargmin(sf_prob)
+                deltats_opt = deltats[ipair]
+                deltams_opt = deltams[ipair]
                 sf_zscores_opt = sf_zscores[ipair]
             except ValueError:
                 sf_prob_min = np.nan
@@ -462,6 +464,8 @@ if __name__ == "__main__":
             # Add params to dict
             dict_params.update(
                 {
+                    "deltams": deltams_opt,
+                    "deltats": deltats_opt,
                     "ilo_sf": i_sf[0],
                     "ihi_sf": i_sf[1],
                     "sf_prob": sf_prob_min,

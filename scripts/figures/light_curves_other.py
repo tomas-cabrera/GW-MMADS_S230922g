@@ -4,6 +4,7 @@ from glob import glob
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 from astropy.io import fits
 
 from scripts.utils import paths, plotting
@@ -14,10 +15,33 @@ from scripts.utils.stamps import plot_stamp
 
 ###############################################################################
 
+# Load candidates_table
+candidates_table_path = paths.tables / "candidates_table.tex"
+if pa.exists(candidates_table_path):
+    candidates_table = pd.read_csv(
+        candidates_table_path,
+        delimiter=" & ",
+        names=[
+            "objid",
+            "z",
+            "z_err",
+            "z_source",
+            "CR_2D",
+            "CR_3D",
+            "parsnip_class",
+            "parsnip_prob",
+        ],
+        na_values=["-", "*"],
+    )
+    candidates_table["parsnip_prob"] = candidates_table["parsnip_prob"].apply(
+        lambda x: x.split()[0]
+    )
+    candidates_table["z"] = pd.to_numeric(candidates_table["z"])
+
 # Iterate over DECam photometry files
 DECAM_DIR = paths.PHOTOMETRY_DIR / "DECam" / "diffphot"
 figpaths = []
-for oi, obj in enumerate(plotting.other_objs):
+for oi, obj in enumerate(candidates_table["objid"]):
     # Get the first file that matches the object name
     glob_str = str(DECAM_DIR / f"*{obj}.fits")
     fitsname = glob(glob_str)[0]
@@ -54,6 +78,7 @@ for oi, obj in enumerate(plotting.other_objs):
             ax=ax,
             vmin=maxsnr_row[f"ZMIN_{stamp_str}"],
             vmax=maxsnr_row[f"ZMAX_{stamp_str}"],
+            rasterized=True,
         )
 
         # Add title
@@ -76,6 +101,7 @@ for oi, obj in enumerate(plotting.other_objs):
         color="xkcd:neon green",
         ha="center",
         va="bottom",
+        rasterized=True,
     )
 
     ## Plot compass
@@ -87,10 +113,12 @@ for oi, obj in enumerate(plotting.other_objs):
         "head_width": 5,
         "head_length": 7,
         "color": "xkcd:neon green",
+        "rasterized": True,
     }
     kw_annotate = {
         "color": "xkcd:neon green",
         "fontsize": 8,
+        "rasterized": True,
     }
     axd["DIFF"].arrow(
         x,
@@ -125,9 +153,9 @@ for oi, obj in enumerate(plotting.other_objs):
     ax = axd["LC"]
     # Plot photometry
     if obj == "C202309242244079m290053":
-        plot_light_curve_from_file(fitsname, ax=ax)
+        plot_light_curve_from_file(fitsname, ax=ax, rasterized=True)
     else:
-        plot_light_curve_from_file(fitsname, ax=ax, plot_legend=False)
+        plot_light_curve_from_file(fitsname, ax=ax, plot_legend=False, rasterized=True)
 
     # Plot square indicating the time of the max snr
     ax.plot(
@@ -140,6 +168,7 @@ for oi, obj in enumerate(plotting.other_objs):
         markersize=10,
         label="Stamp",
         linestyle="",
+        rasterized=True,
     )
 
     # Set title
@@ -156,6 +185,81 @@ for oi, obj in enumerate(plotting.other_objs):
 
     # Append to list of figpaths
     figpaths.append(figpath)
+
+# Generate tex for figures
+
+# Setup tex
+figsetnum = 1
+figpagestart_first = f"""
+\\begin{{figure*}}
+    \\centering
+"""
+figpageend_first = f"""
+    \\caption{{Light curves for our remaining 40 candidates.}}
+    \\label{{fig:light_curves_other}}
+\\end{{figure*}}
+"""
+figpagestart = f"""
+\\begin{{figure*}}\ContinuedFloat
+    \\centering
+"""
+figpageend = f"""
+    \\caption{{Light curves for our remaining 40 candidates (cont.).}}
+    \\label{{fig:light_curves_other}}
+\\end{{figure*}}
+"""
+n_fig_per_row = 2
+n_rows_per_page = 3
+figwidths_per_n = {1: 0.95, 2: 0.49, 3: 0.32, 4: 0.24}
+
+# Iterate over figpaths
+figsettex = ""
+n_fig = 0
+n_page = 0
+n_fig_in_row = 0
+n_rows_in_page = 0
+for figpath in figpaths:
+    # Get object name
+    n_obj_pdf = pa.basename(figpath)
+    obj = n_obj_pdf.split("_")[-1].replace(".pdf", "")
+
+    ### Add string
+    # Add start of page if appropriate
+    if n_rows_in_page == 0 and n_fig_in_row == 0:
+        if n_fig == 0:
+            figsettex = figpagestart_first
+        else:
+            figsettex += figpagestart
+    # Add start of row if appropriate
+    if n_fig_in_row == 0:
+        figsettex += f"""
+    \\gridline{{"""
+    # Add figure
+    figsettex += f"""
+    \\fig{{figures/light_curves_other/{n_obj_pdf}}}{{{figwidths_per_n[n_fig_per_row]}\\textwidth}}{{}}"""
+    n_fig_in_row += 1
+    # Add end of row if appropriate
+    if n_fig_in_row == n_fig_per_row or n_fig == len(figpaths) - 1:
+        figsettex += f"""
+    }}"""
+        n_fig_in_row = 0
+        n_rows_in_page += 1
+    # Add end of page if appropriate
+    if n_rows_in_page == n_rows_per_page:
+        if n_page == 0:
+            figsettex += figpageend_first
+        else:
+            figsettex += figpageend
+        n_page += 1
+        n_rows_in_page = 0
+
+    # Increment n_fig
+    n_fig += 1
+
+# Write to file
+texpath = paths.script_to_fig(__file__, key="gridline").replace(".pdf", ".tex")
+with open(texpath, "w") as f:
+    f.write(figsettex)
 
 # Generate figset tex for figures
 
