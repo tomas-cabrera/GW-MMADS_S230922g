@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from astropy.io import fits
+from astropy.time import Time
 
 from scripts.utils import paths, plotting
 from scripts.utils.light_curves import plot_light_curve, plot_light_curve_from_file
@@ -32,6 +33,9 @@ if pa.exists(candidates_table_path):
             "parsnip_prob",
         ],
         na_values=["-", "*"],
+        skiprows=14,
+        skipfooter=2,
+        engine="python",
     )
     candidates_table["parsnip_prob"] = candidates_table["parsnip_prob"].apply(
         lambda x: x.split()[0]
@@ -152,7 +156,7 @@ for oi, obj in enumerate(candidates_table["objid"]):
     ### Light curve plot
     ax = axd["LC"]
     # Plot photometry
-    if obj == "C202309242244079m290053":
+    if oi == 0:
         plot_light_curve_from_file(fitsname, ax=ax, rasterized=True)
     else:
         plot_light_curve_from_file(fitsname, ax=ax, plot_legend=False, rasterized=True)
@@ -168,6 +172,15 @@ for oi, obj in enumerate(candidates_table["objid"]):
         markersize=10,
         label="Stamp",
         linestyle="",
+        rasterized=True,
+    )
+
+    # Plot vertical line indicating time of event
+    ax.axvline(
+        Time("2023-09-22T02:03:44", format="isot", scale="utc").mjd,
+        color="k",
+        linestyle="--",
+        alpha=0.5,
         rasterized=True,
     )
 
@@ -195,7 +208,11 @@ figpagestart_first = f"""
     \\centering
 """
 figpageend_first = f"""
-    \\caption{{Light curves for our remaining 40 candidates.}}
+    \\caption{{
+        Light curves for our remaining {len(figpaths) - 1} candidates.
+        The dashed line indicates the S230922g event time.
+        The sample stamps for each transient are taken from the exposure with the highest SNR, indicated with a gray square.
+    }}
     \\label{{fig:light_curves_other}}
 \\end{{figure*}}
 """
@@ -203,18 +220,24 @@ figpagestart = f"""
 \\begin{{figure*}}\ContinuedFloat
     \\centering
 """
-figpageend = f"""
-    \\caption{{Light curves for our remaining 40 candidates (cont.).}}
-    \\label{{fig:light_curves_other}}
+
+
+def figpageend(page_no):
+    return f"""
+    \\caption{{Light curves for our remaining {len(figpaths) - 1} candidates (cont.).}}
+    \\label{{fig:light_curves_other.{page_no}}}
 \\end{{figure*}}
 """
+
+
 n_fig_per_row = 2
 n_rows_per_page = 3
 figwidths_per_n = {1: 0.95, 2: 0.49, 3: 0.32, 4: 0.24}
 
 # Iterate over figpaths
 figsettex = ""
-n_fig = 0
+n_fig_added = 0
+n_fig_skipped = 0
 n_page = 0
 n_fig_in_row = 0
 n_rows_in_page = 0
@@ -223,10 +246,15 @@ for figpath in figpaths:
     n_obj_pdf = pa.basename(figpath)
     obj = n_obj_pdf.split("_")[-1].replace(".pdf", "")
 
+    # Skip if favored object
+    if obj == "C202309242206400m275139":
+        n_fig_skipped += 1
+        continue
+
     ### Add string
     # Add start of page if appropriate
     if n_rows_in_page == 0 and n_fig_in_row == 0:
-        if n_fig == 0:
+        if n_fig_added == 0:
             figsettex = figpagestart_first
         else:
             figsettex += figpagestart
@@ -239,22 +267,28 @@ for figpath in figpaths:
     \\fig{{figures/light_curves_other/{n_obj_pdf}}}{{{figwidths_per_n[n_fig_per_row]}\\textwidth}}{{}}"""
     n_fig_in_row += 1
     # Add end of row if appropriate
-    if n_fig_in_row == n_fig_per_row or n_fig == len(figpaths) - 1:
+    if (
+        n_fig_in_row == n_fig_per_row
+        or n_fig_added == len(figpaths) - n_fig_skipped - 1
+    ):
         figsettex += f"""
     }}"""
         n_fig_in_row = 0
         n_rows_in_page += 1
     # Add end of page if appropriate
-    if n_rows_in_page == n_rows_per_page:
+    if (
+        n_rows_in_page == n_rows_per_page
+        or n_fig_added == len(figpaths) - n_fig_skipped - 1
+    ):
         if n_page == 0:
             figsettex += figpageend_first
         else:
-            figsettex += figpageend
+            figsettex += figpageend(n_page)
         n_page += 1
         n_rows_in_page = 0
 
     # Increment n_fig
-    n_fig += 1
+    n_fig_added += 1
 
 # Write to file
 texpath = paths.script_to_fig(__file__, key="gridline").replace(".pdf", ".tex")
