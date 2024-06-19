@@ -83,6 +83,7 @@ PATH_TO_PARSNIP = "/home/tomas/academia/projects/decam_followup_O4/S230922g/GW-M
 INTERNAL_ZS = {
     "C202309242206400m275139": (0.184, 3.627e-5),
     "C202309242248405m134956": (0.128, 3.757e-5),
+    "C202310042207549m253435": (0.248, 0.001),
 }
 
 NONCANDIDATES_POSTPROCESSING = [
@@ -228,7 +229,21 @@ table_cols = [
 df_sa.sort_values("skymap_searched_prob", inplace=True)
 
 # Iterate over rows
-tablestr = ""
+tablestr = f"""\\startlongtable
+\\begin{{deluxetable*}}{{cccccccc}}
+    \\label{{tab:candidates}}
+    \\tablecaption{{
+        Summary table for our counterpart candidate shortlist.
+        Redshifts are shown as available from crossmatching with several extragalactic databases and direct measurement for the objects which we took spectra (as DESI redshifts are proprietary, they are masked from the table with an ``*").
+        The objects are sorted by ascending 2D skymap probability, s.t. the objects in the highest probability regions are listed first.
+        The highest probability ParSNIP classification along with the probability are listed in the last two columns.
+    }}
+    \\tablehead{{
+        \\colhead{{Object}} & \\multicolumn{{3}}{{c}}{{Redshift}} & \\multicolumn{{2}}{{c}}{{GW skymap prob.}} & \\multicolumn{{2}}{{c}}{{\\colhead{{ParSNIP}}}} \\\\
+        & \\colhead{{$z$}} & \\colhead{{$z_{{\\rm err}}$}} & \\colhead{{$z$ source}} & \\colhead{{2D}} & \\colhead{{3D}} & \\colhead{{Classification}} & \\colhead{{Prob.}}
+    }}
+    \\startdata
+"""
 for ri, row in df_sa.iterrows():
     # Add data
     tempstr = " & ".join([ri] + [str(row[col]) for col in table_cols])
@@ -236,6 +251,8 @@ for ri, row in df_sa.iterrows():
     tempstr += r" \\" + "\n"
     # Add to tablestr
     tablestr += tempstr
+tablestr += f"""\enddata
+\end{{deluxetable*}}"""
 
 # Write to file
 texpath = __file__.replace("/scripts/", "/tex/").replace(".py", ".tex")
