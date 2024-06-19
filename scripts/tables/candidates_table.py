@@ -6,7 +6,7 @@ from astropy.coordinates import SkyCoord
 from astropy.cosmology import WMAP9 as cosmo
 from ligo.skymap.io.fits import read_sky_map
 from ligo.skymap.postprocess import crossmatch
-from scripts.utils import paths
+from scripts.utils import paths, plotting
 
 ####################################################################################################
 
@@ -92,6 +92,8 @@ NONCANDIDATES_POSTPROCESSING = [
     "T202310032224474m305703",  # "kilonova", tailing nondetection
     "T202309242207149m242500",
     "T202309242258081m201140",
+    "C202311032229009m263654",  # TNS classified as SN
+    "T202310042213349m303327",  # Non-nuclear (see LS/PanSTARRS images)
 ]
 
 ####################################################################################################
@@ -228,6 +230,10 @@ table_cols = [
 # Sort by skymap probability
 df_sa.sort_values("skymap_searched_prob", inplace=True)
 
+##############################
+###      Generate tex      ###
+##############################
+
 # Iterate over rows
 tablestr = f"""\\startlongtable
 \\begin{{deluxetable*}}{{cccccccc}}
@@ -246,7 +252,9 @@ tablestr = f"""\\startlongtable
 """
 for ri, row in df_sa.iterrows():
     # Add data
-    tempstr = " & ".join([ri] + [str(row[col]) for col in table_cols])
+    tempstr = " & ".join(
+        [plotting.tns_names[ri]] + [str(row[col]) for col in table_cols]
+    )
     # Add newline
     tempstr += r" \\" + "\n"
     # Add to tablestr

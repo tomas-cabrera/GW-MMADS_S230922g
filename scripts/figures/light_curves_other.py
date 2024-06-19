@@ -23,7 +23,7 @@ if pa.exists(candidates_table_path):
         candidates_table_path,
         delimiter=" & ",
         names=[
-            "objid",
+            "tnsid",
             "z",
             "z_err",
             "z_source",
@@ -45,7 +45,13 @@ if pa.exists(candidates_table_path):
 # Iterate over DECam photometry files
 DECAM_DIR = paths.PHOTOMETRY_DIR / "DECam" / "diffphot"
 figpaths = []
-for oi, obj in enumerate(candidates_table["objid"]):
+for oi, tns in enumerate(candidates_table["tnsid"]):
+    # Get objid
+    for objid, tnsid in plotting.tns_names.items():
+        if tnsid == tns:
+            obj = objid
+            break
+
     # Get the first file that matches the object name
     glob_str = str(DECAM_DIR / f"*{obj}.fits")
     fitsname = glob(glob_str)[0]
@@ -97,7 +103,9 @@ for oi, obj in enumerate(candidates_table["objid"]):
     y = 110
     xmin = x - bar / arcsec_per_pix / 2
     xmax = x + bar / arcsec_per_pix / 2
-    axd["DIFF"].plot([xmin, xmax], [y, y], color="xkcd:neon green", linewidth=1.5)
+    axd["DIFF"].plot(
+        [xmin, xmax], [y, y], color="xkcd:neon green", linewidth=1.5, rasterized=True
+    )
     axd["DIFF"].annotate(
         f'{bar}"',
         xy=(x, y - 5),
@@ -185,7 +193,7 @@ for oi, obj in enumerate(candidates_table["objid"]):
     )
 
     # Set title
-    axd["LC"].set_title(obj)
+    axd["LC"].set_title(tns)
     plt.tight_layout()
 
     # Savefig and close

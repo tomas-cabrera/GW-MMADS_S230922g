@@ -156,7 +156,7 @@ def plot_light_curve(
         fig, ax = plt.subplots()
     ax.errorbar(time, flux, yerr=flux_err, ls="", color=band2color[band], **kwargs)
     ax.set_xlabel("Time (MJD)")
-    ax.set_ylabel("Mag")
+    ax.set_ylabel("Magnitude")
     return ax
 
 
