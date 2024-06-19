@@ -542,7 +542,7 @@ if __name__ == "__main__":
         plt.ylabel("Flux")
         plt.legend(loc="upper left", bbox_to_anchor=(1, 1))
         plt.tight_layout()
-        plt.show()
+        # plt.show()
         plt.close()
 
         # Combine params and save as csv

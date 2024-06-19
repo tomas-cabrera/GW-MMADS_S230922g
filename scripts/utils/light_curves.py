@@ -276,7 +276,7 @@ def plot_light_curve_from_file(
             )
         )
         if plot_legend:
-            ax.legend(handles=legend_elements, loc="lower center", ncols=2)
+            ax.legend(handles=legend_elements, ncols=2, frameon=True)
 
 
 def get_light_curve_path(objid, instrument, wise_data="Processed_Data"):
