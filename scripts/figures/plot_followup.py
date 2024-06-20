@@ -1,5 +1,6 @@
 import json
 import os
+import os.path as pa
 import warnings
 
 import healpy as hp
@@ -226,7 +227,35 @@ def plot_coverage(
         #         )
 
     # Plot human-vetted candidates
-    candidate_names = plotting.tns_names.keys()
+    # Load candidates_table
+    candidates_table_path = paths.tables / "candidates_table.tex"
+    if pa.exists(candidates_table_path):
+        candidates_table = pd.read_csv(
+            candidates_table_path,
+            delimiter=" & ",
+            names=[
+                "tnsid",
+                "z",
+                "z_err",
+                "z_source",
+                "CR_2D",
+                "CR_3D",
+                "parsnip_class",
+                "parsnip_prob",
+            ],
+            na_values=["-", "*"],
+            skiprows=14,
+            skipfooter=2,
+            engine="python",
+        )
+
+        # Get internal names
+        candidate_names = []
+        for tnsid in candidates_table["tnsid"]:
+            for obj, tns in plotting.tns_names.items():
+                if tns == tnsid:
+                    candidate_names.append(obj)
+                    break
     cand_coords = np.array([plotting.candname_to_radec(c) for c in candidate_names])
     x, y = m.projtran(cand_coords[:, 0], cand_coords[:, 1])
     ax.plot(
@@ -235,6 +264,19 @@ def plot_coverage(
         "x",
         color="k",
         label="Candidates",
+        rasterized=True,
+    )
+    i_favored = np.where(np.array(candidate_names) == "C202309242206400m275139")[0]
+    ax.plot(
+        x[i_favored],
+        y[i_favored],
+        "*",
+        color="xkcd:neon green",
+        markersize=10,
+        markeredgecolor="k",
+        markeredgewidth=0.5,
+        label="AT 2023aagj",
+        rasterized=True,
     )
 
     # Labels, legend
