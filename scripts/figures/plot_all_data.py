@@ -154,6 +154,52 @@ for oi, obj in enumerate(plotting.spectra_objs):
     # ax.xaxis.set_label_position("top")
     # ax.xaxis.tick_top()
 
+    # Add Swift observation
+    swifttime = Time("2023-12-25T06:02:00", format="isot", scale="utc").mjd
+    swiftcolor = tc.tol_cset("bright")[5]
+    axd["LC"].axvline(
+        x=swifttime,
+        zorder=0,
+        color=swiftcolor,
+        rasterized=True,
+    )
+    axd["LC"].text(
+        swifttime + 1,
+        20.46,
+        r"\textit{Swift}-XRT",
+        ha="left",
+        va="center",
+        color=swiftcolor,
+        fontsize=8,
+        # rotation=90,
+        # backgroundcolor="w",
+        # bbox=dict(facecolor="w", edgecolor="none", alpha=0.5),
+        rasterized=True,
+    )
+
+    # # Add WISE observation
+    # wisetime = 60243.942988636365
+    # wisecolor = tc.tol_cset("dark")[1]
+    # axd["LC"].axvline(
+    #     x=wisetime,
+    #     zorder=0,
+    #     color=wisecolor,
+    #     rasterized=True,
+    # )
+    # axd["LC"].text(
+    #     wisetime + 1,
+    #     20.46,
+    #     "WISE",
+    #     ha="left",
+    #     va="center",
+    #     color=wisecolor,
+    #     fontsize=8,
+    #     # rotation=90,
+    #     # backgroundcolor="w",
+    #     # bbox=dict(facecolor="w", edgecolor="none", alpha=0.5),
+    #     rasterized=True,
+    # )
+
     # Plot square indicating the time of the max snr
     ax.plot(
         maxsnr_row["MJD_OBS"],
@@ -189,6 +235,7 @@ for oi, obj in enumerate(plotting.spectra_objs):
 
     # Plot telluric lines
     telluric_lines = [
+        [6867, 6884],
         [7594, 7621],
     ]
     color = tc.tol_cset("bright")[2]
@@ -268,6 +315,19 @@ for oi, obj in enumerate(plotting.spectra_objs):
             x=spectime,
             zorder=0,
             color=spectra_artist[0].get_color(),
+            rasterized=True,
+        )
+        axd["LC"].text(
+            spectime - 1,
+            20.44,
+            plotting.spectra_instruments[obj][yyyymmdd],
+            ha="right",
+            va="center",
+            color=spectra_artist[0].get_color(),
+            fontsize=8,
+            # rotation=90,
+            # backgroundcolor="w",
+            # bbox=dict(facecolor="w", edgecolor="none", alpha=0.5),
             rasterized=True,
         )
 
