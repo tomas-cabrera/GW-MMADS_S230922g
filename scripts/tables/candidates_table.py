@@ -242,7 +242,7 @@ tablestr = f"""\\startlongtable
         Summary table for our counterpart candidate shortlist.
         Redshifts are shown as available from crossmatching with several extragalactic databases and direct measurement for the objects which we took spectra (as DESI redshifts are proprietary, they are masked from the table with an ``*").
         The objects are sorted by ascending 2D skymap probability, s.t. the objects in the highest probability regions are listed first.
-        The highest probability ParSNIP classification along with the probability are listed in the last two columns.
+        The highest probability ParSNIP photometric classification along with the probability are listed in the last two columns.
     }}
     \\tablehead{{
         \\colhead{{Object}} & \\multicolumn{{3}}{{c}}{{Redshift}} & \\multicolumn{{2}}{{c}}{{GW skymap prob.}} & \\multicolumn{{2}}{{c}}{{\\colhead{{ParSNIP}}}} \\\\
