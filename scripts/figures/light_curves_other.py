@@ -6,10 +6,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from astropy.io import fits
+from astropy.table import Table
 from astropy.time import Time
 
+import scripts.utils.light_curves as mylc
 from scripts.utils import paths, plotting
-from scripts.utils.light_curves import plot_light_curve, plot_light_curve_from_file
 from scripts.utils.stamps import plot_stamp
 
 ###############################################################################
@@ -165,9 +166,43 @@ for oi, tns in enumerate(candidates_table["tnsid"]):
     ax = axd["LC"]
     # Plot photometry
     if oi == 0:
-        plot_light_curve_from_file(fitsname, ax=ax, rasterized=True)
+        mylc.plot_light_curve_from_file(fitsname, ax=ax, rasterized=True)
     else:
-        plot_light_curve_from_file(fitsname, ax=ax, plot_legend=False, rasterized=True)
+        mylc.plot_light_curve_from_file(
+            fitsname, ax=ax, plot_legend=False, rasterized=True
+        )
+
+    # Plot Wendelstein photometry
+    wendelstein_path = (
+        paths.PHOTOMETRY_DIR / "Wendelstein" / "S230922g" / obj / f"{obj}.ecsv"
+    )
+    if pa.exists(wendelstein_path):
+        # Get data
+        wendelstein_data = Table.read(wendelstein_path)
+
+        # Iterate over filters
+        for f in np.unique(wendelstein_data["FILTER"]):
+            # Mask data
+            mask = wendelstein_data["FILTER"] == f
+            mask = mask & (wendelstein_data["MAG_APER_DIFF"] != 99)
+            mask = (
+                mask
+                & (wendelstein_data["MAG_APER_DIFF"] >= ax.get_ylim()[1])
+                & (wendelstein_data["MAG_APER_DIFF"] <= ax.get_ylim()[0])
+            )
+            data_temp = wendelstein_data[mask]
+
+            # Plot data
+            ax.errorbar(
+                data_temp["MJD_OBS"].value,
+                data_temp["MAG_APER_DIFF"].value,
+                yerr=data_temp["MAGERR_APER_DIFF"].value,
+                fmt="D",
+                markersize=2,
+                color=plotting.band2color[f],
+                # label="Wendelstein",
+                rasterized=True,
+            )
 
     # Plot square indicating the time of the max snr
     ax.plot(
@@ -220,6 +255,7 @@ figpageend_first = f"""
         Light curves for our remaining {len(figpaths) - 1} candidates.
         The dashed line indicates the S230922g event time.
         The sample stamps for each transient are taken from the exposure with the highest SNR, indicated with a gray square.
+        Data taken with Wendelstein appear as small diamonds, where relevant.
     }}
     \\label{{fig:light_curves_other}}
 \\end{{figure*}}

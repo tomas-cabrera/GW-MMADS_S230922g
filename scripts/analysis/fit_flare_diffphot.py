@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from astropy import units as u
-from astropy.cosmology import Planck18
+from astropy.cosmology import FlatLambdaCDM, Planck18
 from astropy.io import fits
 from astropy.table import Table
 from scipy.optimize import curve_fit
@@ -42,7 +42,8 @@ def calc_total_energy(
     filter,
     z,
     z_err,
-    cosmo=Planck18,
+    cosmo=FlatLambdaCDM(H0=70, Om0=0.3),
+    # cosmo=Planck18,
 ):
     """Calculates the total energy emitted in a light curve, in ergs.
 
@@ -244,6 +245,9 @@ if __name__ == "__main__":
                 "parsnip_prob",
             ],
             na_values=["-", "*"],
+            skiprows=14,
+            skipfooter=2,
+            engine="python",
         )
         candidates_table["parsnip_prob"] = candidates_table["parsnip_prob"].apply(
             lambda x: x.split()[0]
@@ -259,9 +263,14 @@ if __name__ == "__main__":
 
     # Iterate over objects
     df_master = []
-    for objid in candidates_table["objid"]:
+    for tnsid in candidates_table["objid"]:
         print("*" * 60)
-        print(objid)
+        print(tnsid)
+        # Get objid
+        for obj, tns in plotting.tns_names.items():
+            if tnsid == tns:
+                objid = obj
+                break
 
         ### Difference photometry
         # Get the first file that matches the object name
@@ -342,8 +351,8 @@ if __name__ == "__main__":
             ##############################
 
             # Load redshift
-            if objid in candidates_table["objid"].values:
-                z = candidates_table["z"][candidates_table["objid"] == objid].values[0]
+            if tnsid in candidates_table["objid"].values:
+                z = candidates_table["z"][candidates_table["objid"] == tnsid].values[0]
             else:
                 z = np.nan
             if np.isnan(z):
