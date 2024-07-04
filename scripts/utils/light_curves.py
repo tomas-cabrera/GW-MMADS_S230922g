@@ -197,34 +197,55 @@ def plot_light_curve_from_file(
             filter_mask = data["FILTER"] == f
 
             # Iterate over detection types
+            legend_include_upper_limit = False
             for d in ["m", "q", "p"]:
+                # Initialize marker
+                marker = None
+
                 # Select data
                 if d == "m":
                     y = lim_mag_5
                     y_err = np.zeros_like(y)
+                    marker = "v"
+                    markersize = 5
                 else:
                     y = flux
                     y_err = flux_err
                 # Define mask
                 mask = filter_mask & (y < 25) & (data["STATUS_FPHOT"] == d)
-                # Plot
-                plot_light_curve(
-                    time[mask],
-                    y[mask],
-                    y_err[mask],
-                    f,
-                    ax=ax,
-                    band2color=band2color,
-                    **kwargs,
-                    **plotting.kw_dettag[d],
-                )
+
+                # Define marker
+                if marker is None:
+                    print(f)
+                    if f == "g":
+                        marker = "X"
+                        markersize = 5
+                    elif f == "i":
+                        marker = "P"
+                        markersize = 5
+
+                if np.any(mask):
+                    if d == "m":
+                        legend_include_upper_limit = True
+                    # Plot
+                    plot_light_curve(
+                        time[mask],
+                        y[mask],
+                        y_err[mask],
+                        f,
+                        ax=ax,
+                        band2color=band2color,
+                        marker=marker,
+                        **kwargs,
+                        **plotting.kw_dettag[d],
+                    )
 
             # Add artists to legend
             legend_elements.append(
                 Line2D(
                     [0],
                     [0],
-                    marker="o",
+                    marker=marker,
                     color=band2color[f],
                     label=f,
                     ls="",
@@ -251,17 +272,18 @@ def plot_light_curve_from_file(
         ax.invert_yaxis()
 
         # Add legend
-        legend_elements.append(
-            Line2D(
-                [0],
-                [0],
-                color="k",
-                marker="v",
-                fillstyle="none",
-                label="Upper limit",
-                linestyle="",
+        if legend_include_upper_limit:
+            legend_elements.append(
+                Line2D(
+                    [0],
+                    [0],
+                    color="k",
+                    marker="v",
+                    fillstyle="none",
+                    label="Upper limit",
+                    linestyle="",
+                )
             )
-        )
         legend_elements.append(
             Line2D(
                 [0],
@@ -276,7 +298,13 @@ def plot_light_curve_from_file(
             )
         )
         if plot_legend:
-            ax.legend(handles=legend_elements, ncols=2, frameon=True)
+            if len(legend_elements) > 3:
+                ncols = 2
+            else:
+                ncols = 1
+            ax.legend(
+                handles=legend_elements, ncols=ncols, loc="lower center", frameon=True
+            )
 
 
 def get_light_curve_path(objid, instrument, wise_data="Processed_Data"):

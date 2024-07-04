@@ -37,15 +37,12 @@ for oi, obj in enumerate(plotting.spectra_objs):
             ["LC", "TEMP"],
             ["LC", "TEMP"],
             ["LC", "SCI"],
-            ["ALLPHOT", "SCI"],
-            ["ALLPHOT", "DIFF"],
-            ["ALLPHOT", "DIFF"],
-            ["SPEC", "SPEC"],
-            ["SPEC", "SPEC"],
-            ["SPEC", "SPEC"],
+            ["SPEC", "SCI"],
+            ["SPEC", "DIFF"],
+            ["SPEC", "DIFF"],
         ],
         width_ratios=[3, 1],
-        figsize=(7, 7.5),
+        figsize=(7, 5),
         gridspec_kw={
             # "hspace": 0,
             "wspace": 0,
@@ -382,91 +379,91 @@ for oi, obj in enumerate(plotting.spectra_objs):
         ax.set_ylabel("Norm. flux")
     ax.legend(loc="lower right", frameon=False)
 
-    ##############################
-    ###   All photometry plot  ###
-    ##############################
+    # ##############################
+    # ###   All photometry plot  ###
+    # ##############################
 
-    # Select axes
-    ax = axd["ALLPHOT"]
+    # # Select axes
+    # ax = axd["ALLPHOT"]
 
-    # Load light curves
-    data_dict = {}
-    for inst in plotting.kw_instruments.keys():
-        try:
-            df_temp = mylc.get_light_curve(obj, inst)
-        except FileNotFoundError:
-            continue
-        data_dict[inst] = df_temp
+    # # Load light curves
+    # data_dict = {}
+    # for inst in plotting.kw_instruments.keys():
+    #     try:
+    #         df_temp = mylc.get_light_curve(obj, inst)
+    #     except FileNotFoundError:
+    #         continue
+    #     data_dict[inst] = df_temp
 
-    # Plot light curves
-    artists_insts = {}
-    artists_fs = {}
-    for inst, df in data_dict.items():
-        # Add instrument marker to artist list
-        if inst not in artists_insts:
-            (artists_insts[inst],) = ax.plot(
-                [],
-                [],
-                label=inst,
-                ls="",
-                marker=plotting.kw_instruments[inst]["marker"],
-                color="k",
-            )
+    # # Plot light curves
+    # artists_insts = {}
+    # artists_fs = {}
+    # for inst, df in data_dict.items():
+    #     # Add instrument marker to artist list
+    #     if inst not in artists_insts:
+    #         (artists_insts[inst],) = ax.plot(
+    #             [],
+    #             [],
+    #             label=inst,
+    #             ls="",
+    #             marker=plotting.kw_instruments[inst]["marker"],
+    #             color="k",
+    #         )
 
-        # Iterate over filters
-        for f in df["filter"].unique():
-            # Skip 'N/A' rows
-            if f == "N/A":
-                continue
+    #     # Iterate over filters
+    #     for f in df["filter"].unique():
+    #         # Skip 'N/A' rows
+    #         if f == "N/A":
+    #             continue
 
-            # Add filter to artist list
-            if f not in artists_fs:
-                (artists_fs[f],) = ax.plot(
-                    [],
-                    [],
-                    label=f,
-                    ls="",
-                    marker="o",
-                    color=plotting.band2color[f],
-                )
+    #         # Add filter to artist list
+    #         if f not in artists_fs:
+    #             (artists_fs[f],) = ax.plot(
+    #                 [],
+    #                 [],
+    #                 label=f,
+    #                 ls="",
+    #                 marker="o",
+    #                 color=plotting.band2color[f],
+    #             )
 
-            # Mask to filter
-            mask = df["filter"] == f
+    #         # Mask to filter
+    #         mask = df["filter"] == f
 
-            # Get detection type
-            # dettag = df["dettag"].iloc[0]
+    #         # Get detection type
+    #         # dettag = df["dettag"].iloc[0]
 
-            # Get plot keywords
-            # kw = plotting.kw_dettag[dettag]
+    #         # Get plot keywords
+    #         # kw = plotting.kw_dettag[dettag]
 
-            # Plot
-            df_plot = df[mask]
-            ax.errorbar(
-                df_plot["mjd"],
-                df_plot["mag"],
-                yerr=df_plot["magerr"],
-                ls="",
-                lw=0.5,
-                marker=plotting.kw_instruments[inst]["marker"],
-                markersize=6,
-                markeredgewidth=0,
-                color=plotting.band2color[f],
-                capsize=1.5,
-                # **kw,
-            )
+    #         # Plot
+    #         df_plot = df[mask]
+    #         ax.errorbar(
+    #             df_plot["mjd"],
+    #             df_plot["mag"],
+    #             yerr=df_plot["magerr"],
+    #             ls="",
+    #             lw=0.5,
+    #             marker=plotting.kw_instruments[inst]["marker"],
+    #             markersize=6,
+    #             markeredgewidth=0,
+    #             color=plotting.band2color[f],
+    #             capsize=1.5,
+    #             # **kw,
+    #         )
 
-    # Shade area of campaign plot
-    ax.axvspan(
-        *axd["LC"].get_xlim(),
-        color="k",
-        alpha=0.1,
-    )
+    # # Shade area of campaign plot
+    # ax.axvspan(
+    #     *axd["LC"].get_xlim(),
+    #     color="k",
+    #     alpha=0.1,
+    # )
 
-    ax.invert_yaxis()
-    artists = {**artists_insts, **artists_fs}
-    ax.set_xlabel("Time (MJD)")
-    ax.set_ylabel("Magnitude")
-    ax.legend(handles=artists.values(), frameon=True, labels=artists.keys())
+    # ax.invert_yaxis()
+    # artists = {**artists_insts, **artists_fs}
+    # ax.set_xlabel("Time (MJD)")
+    # ax.set_ylabel("Magnitude")
+    # ax.legend(handles=artists.values(), frameon=True, labels=artists.keys())
 
     ##############################
     ###       Auxiliary        ###

@@ -111,19 +111,19 @@ kw_instruments = {
 # Detection type plot keywords
 kw_dettag = {
     "m": {
-        "marker": "v",
+        # "marker": "v",
         "markerfacecolor": "none",
-        "markersize": 5,
+        # "markersize": 5,
     },
     "q": {
-        "marker": "o",
+        # "marker": "o",
         # "marker": "h",
         # "markerfacecolor": "none",
-        "markersize": 5,
+        # "markersize": 5,
     },
     "p": {
-        "marker": "o",
-        "markersize": 5,
+        # "marker": "o",
+        # "markersize": 5,
     },
 }
 
