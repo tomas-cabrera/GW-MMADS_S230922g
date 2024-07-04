@@ -216,7 +216,6 @@ def plot_light_curve_from_file(
 
                 # Define marker
                 if marker is None:
-                    print(f)
                     if f == "g":
                         marker = "X"
                         markersize = 5
@@ -247,7 +246,7 @@ def plot_light_curve_from_file(
                     [0],
                     marker=marker,
                     color=band2color[f],
-                    label=f,
+                    label=f"DECam {f}",
                     ls="",
                 )
             )
@@ -303,7 +302,10 @@ def plot_light_curve_from_file(
             else:
                 ncols = 1
             ax.legend(
-                handles=legend_elements, ncols=ncols, loc="lower center", frameon=True
+                handles=legend_elements,
+                ncols=ncols,
+                # loc="lower center",
+                frameon=True,
             )
 
 
