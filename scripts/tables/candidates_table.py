@@ -182,6 +182,10 @@ df_sa["skymap_searched_prob_vol_str"] = df_sa["skymap_searched_prob_vol"].apply(
 df_sa["table_parsnip_class_str"] = df_sa["table_parsnip_class"].apply(
     lambda x: x if type(x) == str else "-"
 )
+# Rename TDE classification to non-SN
+df_sa["table_parsnip_class_str"] = df_sa["table_parsnip_class_str"].apply(
+    lambda x: "Non-SN" if x == "TDE" else x
+)
 df_sa["table_parsnip_prob_str"] = df_sa["table_parsnip_prob"].apply(
     lambda x: f"{x:.3f}" if ~np.isnan(x) else "-"
 )
@@ -208,10 +212,13 @@ mask = mask & np.array([gets_bluer(i) for i in df_sa.index])
 
 ### Remove rows with high skymap_z_zscores
 # (inverting the mask ensures that all rows with nan zs are kept)
-mask = mask & ~(np.abs(df_sa["skymap_z_zscore"]) > 3)
+mask = mask & ~(np.abs(df_sa["skymap_z_zscore"]) > 2)
 
 ### Remove noncandidates
 mask = mask & ~df_sa.index.isin(NONCANDIDATES_POSTPROCESSING)
+
+### Remove T transients
+mask = mask & ~df_sa.index.str.startswith("T")
 
 ### Apply mask
 df_sa = df_sa[mask]
@@ -240,9 +247,9 @@ tablestr = f"""\\startlongtable
     \\label{{tab:candidates}}
     \\tablecaption{{
         Summary table for our counterpart candidate shortlist.
-        Redshifts are shown as available from crossmatching with several extragalactic databases and direct measurement for the objects which we took spectra (as DESI redshifts are proprietary, they are masked from the table with an ``*").
+        Redshifts are shown as available from crossmatching with several extragalactic databases and direct measurement for the objects which we took spectra.
         The objects are sorted by ascending 2D skymap probability, s.t. the objects in the highest probability regions are listed first.
-        The highest probability ParSNIP photometric classification along with the probability are listed in the last two columns.
+        The highest probability ParSNIP photometric classification along with the probability are listed in the last two columns; in this work, we rename the ParSNIP class ``TDE" as ``Non-SN" (see text).
     }}
     \\tablehead{{
         \\colhead{{Object}} & \\multicolumn{{3}}{{c}}{{Redshift}} & \\multicolumn{{2}}{{c}}{{GW skymap prob.}} & \\multicolumn{{2}}{{c}}{{\\colhead{{ParSNIP}}}} \\\\
