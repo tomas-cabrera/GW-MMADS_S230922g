@@ -145,6 +145,30 @@ df_sa["skymap_z"] = df_sa["skymap_distmu"].apply(
     lambda x: z_at_value(cosmo.luminosity_distance, x * u.Mpc)
 )
 
+
+def calc_z_hi(row):
+    distmu = row["skymap_distmu"]
+    distsigma = row["skymap_distsigma"]
+    return z_at_value(cosmo.luminosity_distance, (distmu + distsigma) * u.Mpc)
+
+
+df_sa["skymap_z_hi"] = df_sa[["skymap_distmu", "skymap_distsigma"]].apply(
+    calc_z_hi,
+    axis=1,
+)
+
+
+def calc_z_lo(row):
+    distmu = row["skymap_distmu"]
+    distsigma = row["skymap_distsigma"]
+    return z_at_value(cosmo.luminosity_distance, (distmu - distsigma) * u.Mpc)
+
+
+df_sa["skymap_z_lo"] = df_sa[["skymap_distmu", "skymap_distsigma"]].apply(
+    calc_z_lo,
+    axis=1,
+)
+
 ##############################
 ###    Add ParSNIP data    ###
 ##############################
@@ -193,13 +217,32 @@ df_sa["skymap_searched_prob_vol"] = xm_sa.searched_prob_vol
 ###   Generate table tex   ###
 ##############################
 
+
 # Format columns as strings
-df_sa["table_z_str"] = df_sa["host_z"].apply(
-    lambda x: f"{x:.3f}" if ~np.isnan(x) else "-"
+def format_host_z(row):
+    # Get z and z_err
+    z = row["host_z"]
+    z_err = row["host_z_err"]
+
+    # nan z
+    if np.isnan(z):
+        return "-"
+
+    # nan z_err
+    if np.isnan(z_err):
+        return f"{z:.3f}"
+
+    return f"${z:.3f} \\pm {z_err:.3f}$"
+
+
+df_sa["table_z_str"] = df_sa[["host_z", "host_z_err"]].apply(
+    # lambda x: f"{x:.3f}" if ~np.isnan(x) else "-",
+    format_host_z,
+    axis=1,
 )
-df_sa["table_z_err_str"] = df_sa["host_z_err"].apply(
-    lambda x: f"{x:.3f}" if ~np.isnan(x) else "-"
-)
+# df_sa["table_z_err_str"] = df_sa["host_z_err"].apply(
+#     lambda x: f"{x:.3f}" if ~np.isnan(x) else "-"
+# )
 df_sa["table_z_source_str"] = df_sa["host_catalog"].apply(
     lambda x: {
         "lsdr10_specz": "LS specz",
@@ -211,7 +254,26 @@ df_sa["table_z_source_str"] = df_sa["host_catalog"].apply(
         np.nan: "-",
     }[x]
 )
-df_sa["skymap_z_str"] = df_sa["skymap_z"].apply(lambda x: f"{x.value:.3f}")
+
+
+def format_skymap_z(row):
+    # Get z
+    z = row["skymap_z"].value
+    z_hi = row["skymap_z_hi"].value
+    z_lo = row["skymap_z_lo"].value
+
+    # nan z
+    if np.isnan(z):
+        return "-"
+
+    return f"${z:.3f}^{{+{(z_hi - z):.3f}}}_{{-{(z - z_lo):.3f}}}$"
+
+
+df_sa["skymap_z_str"] = df_sa[["skymap_z", "skymap_z_hi", "skymap_z_lo"]].apply(
+    # lambda x: f"{x.value:.3f}",
+    format_skymap_z,
+    axis=1,
+)
 df_sa["skymap_searched_prob_str"] = df_sa["skymap_searched_prob"].apply(
     lambda x: f"{x:.3f}"
 )
@@ -265,7 +327,7 @@ df_sa = df_sa[mask]
 # Select columns
 table_cols = [
     "table_z_str",
-    "table_z_err_str",
+    # "table_z_err_str",
     "table_z_source_str",
     "skymap_z_str",
     "skymap_searched_prob_str",
@@ -283,21 +345,25 @@ df_sa.sort_values("skymap_searched_prob", inplace=True)
 
 # Iterate over rows
 tablestr = f"""\\startlongtable
-\\begin{{deluxetable*}}{{ccccccccc}}
+\\begin{{deluxetable*}}{{cccccccc}}
     \\label{{tab:candidates}}
     \\tablecaption{{
         Summary table for our counterpart candidate shortlist.
         Redshifts are shown as available from crossmatching with several extragalactic databases and direct measurement for the objects which we took spectra.
         The objects are sorted by ascending 2D skymap probability, s.t. the objects in the highest probability regions are listed first.
         The highest probability ParSNIP photometric classification along with the probability are listed in the last two columns; in this work, we rename the ParSNIP class ``TDE" as ``Non-SN" (see text).
-        The last two subdivisions of the table include 
+        The last two subdivisions of the table include transients that reddened in later epochs and those that did not peak during our observation window.
     }}
     \\tablehead{{
-        \\colhead{{Object}} & \\multicolumn{{3}}{{c}}{{Redshift}} & \\multicolumn{{3}}{{c}}{{GW skymap}} & \\multicolumn{{2}}{{c}}{{\\colhead{{ParSNIP}}}} \\\\
-        & \\colhead{{$z$}} & \\colhead{{$z_{{\\rm err}}$}} & \\colhead{{$z$ source}} & \\colhead{{z(\\texttt{{DISTMU}})}} & \\colhead{{2D CI}} & \\colhead{{3D CI}} & \\colhead{{Classification}} & \\colhead{{Prob.}}
+        \\colhead{{Object}} & \\multicolumn{{2}}{{c}}{{Host redshift}} & \\multicolumn{{3}}{{c}}{{GW skymap}} & \\multicolumn{{2}}{{c}}{{\\colhead{{ParSNIP}}}} \\\\
+        & \\colhead{{$z_{{\\rm host}}$}} & \\colhead{{$z_{{\\rm host}}$ source}} & \\colhead{{$z_{{\\rm skymap}}$}} & \\colhead{{2D CI}} & \\colhead{{3D CI}} & \\colhead{{Classification}} & \\colhead{{Prob.}}
     }}
     \\startdata
 """
+### Header graveyard
+# & \\colhead{{$z_{{\\rm err}}$}}
+###
+
 # Add candidates
 for ri, row in df_sa.iterrows():
     # Get TNS name
@@ -320,7 +386,7 @@ for ri, row in df_sa.iterrows():
 
 # Add reddening objects
 tablestr += r"\hline" + "\n"
-tablestr += r"\multicolumn{9}{c}{\textit{Reddening transients}} \\" + "\n"
+tablestr += r"\multicolumn{8}{c}{\textit{Reddening transients}} \\" + "\n"
 tablestr += r"\hline" + "\n"
 for ri, row in df_sa.iterrows():
     if ri not in NONCANDIDATES_REDDENING:
@@ -336,7 +402,7 @@ for ri, row in df_sa.iterrows():
 
 # Add nonpeaking objects
 tablestr += r"\hline" + "\n"
-tablestr += r"\multicolumn{9}{c}{\textit{Transients without peak}} \\" + "\n"
+tablestr += r"\multicolumn{8}{c}{\textit{Transients without peak}} \\" + "\n"
 tablestr += r"\hline" + "\n"
 for ri, row in df_sa.iterrows():
     if ri not in NONCANDIDATES_NOPEAK:
