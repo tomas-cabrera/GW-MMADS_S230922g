@@ -1,12 +1,16 @@
 import astropy.units as u
-from astropy.io import fits
 import numpy as np
 import pandas as pd
 from astropy.coordinates import SkyCoord
-from astropy.cosmology import WMAP9 as cosmo
+from astropy.cosmology import FlatLambdaCDM, z_at_value
+from astropy.io import fits
 from ligo.skymap.io.fits import read_sky_map
 from ligo.skymap.postprocess import crossmatch
+
 from scripts.utils import paths, plotting
+
+# Define cosmology
+cosmo = FlatLambdaCDM(H0=70, Om0=0.3)
 
 ####################################################################################################
 
@@ -94,6 +98,35 @@ NONCANDIDATES_POSTPROCESSING = [
     "T202309242258081m201140",
     "C202311032229009m263654",  # TNS classified as SN
     "T202310042213349m303327",  # Non-nuclear (see LS/PanSTARRS images)
+    # evolve in only one epoch
+    "A202310042247077m204825",
+    "C202309242248465m232916",
+    "C202310042258174m224619",
+    "C202309242224327m160704",
+]
+
+# Persisting transients that redden
+NONCANDIDATES_REDDENING = [
+    # getting redder
+    "C202309242234324m242410",
+    "C202310262240474m244806",
+    "A202309242220316m281816",
+    "A202310042237432m160819",
+    "C202309242214247m221046",
+    "A202309242247422m260221",
+    "C202309242246522m280621",
+    "A202310262246341m291842",
+    "C202310042207549m253435",
+    "A202309242207556m282406",
+]
+
+# Persisting transients that do not peak during our campaign
+NONCANDIDATES_NOPEAK = [
+    # does not peak during observation window
+    "C202309232219031m220609",
+    "C202309242224596m265957",
+    "A202309242229429m265636",
+    "A202312232207465m275903",
 ]
 
 ####################################################################################################
@@ -106,6 +139,11 @@ for objid, (z, z_err) in INTERNAL_ZS.items():
     df_sa.loc[objid, "host_z"] = z
     df_sa.loc[objid, "host_z_err"] = np.nan  # z_err
     df_sa.loc[objid, "host_catalog"] = "internal"
+
+# Calculate skymap redshifts from distmu
+df_sa["skymap_z"] = df_sa["skymap_distmu"].apply(
+    lambda x: z_at_value(cosmo.luminosity_distance, x * u.Mpc)
+)
 
 ##############################
 ###    Add ParSNIP data    ###
@@ -173,6 +211,7 @@ df_sa["table_z_source_str"] = df_sa["host_catalog"].apply(
         np.nan: "-",
     }[x]
 )
+df_sa["skymap_z_str"] = df_sa["skymap_z"].apply(lambda x: f"{x.value:.3f}")
 df_sa["skymap_searched_prob_str"] = df_sa["skymap_searched_prob"].apply(
     lambda x: f"{x:.3f}"
 )
@@ -228,6 +267,7 @@ table_cols = [
     "table_z_str",
     "table_z_err_str",
     "table_z_source_str",
+    "skymap_z_str",
     "skymap_searched_prob_str",
     "skymap_searched_prob_vol_str",
     "table_parsnip_class_str",
@@ -243,29 +283,73 @@ df_sa.sort_values("skymap_searched_prob", inplace=True)
 
 # Iterate over rows
 tablestr = f"""\\startlongtable
-\\begin{{deluxetable*}}{{cccccccc}}
+\\begin{{deluxetable*}}{{ccccccccc}}
     \\label{{tab:candidates}}
     \\tablecaption{{
         Summary table for our counterpart candidate shortlist.
         Redshifts are shown as available from crossmatching with several extragalactic databases and direct measurement for the objects which we took spectra.
         The objects are sorted by ascending 2D skymap probability, s.t. the objects in the highest probability regions are listed first.
         The highest probability ParSNIP photometric classification along with the probability are listed in the last two columns; in this work, we rename the ParSNIP class ``TDE" as ``Non-SN" (see text).
+        The last two subdivisions of the table include 
     }}
     \\tablehead{{
-        \\colhead{{Object}} & \\multicolumn{{3}}{{c}}{{Redshift}} & \\multicolumn{{2}}{{c}}{{GW skymap prob.}} & \\multicolumn{{2}}{{c}}{{\\colhead{{ParSNIP}}}} \\\\
-        & \\colhead{{$z$}} & \\colhead{{$z_{{\\rm err}}$}} & \\colhead{{$z$ source}} & \\colhead{{2D}} & \\colhead{{3D}} & \\colhead{{Classification}} & \\colhead{{Prob.}}
+        \\colhead{{Object}} & \\multicolumn{{3}}{{c}}{{Redshift}} & \\multicolumn{{3}}{{c}}{{GW skymap}} & \\multicolumn{{2}}{{c}}{{\\colhead{{ParSNIP}}}} \\\\
+        & \\colhead{{$z$}} & \\colhead{{$z_{{\\rm err}}$}} & \\colhead{{$z$ source}} & \\colhead{{z(\\texttt{{DISTMU}})}} & \\colhead{{2D CI}} & \\colhead{{3D CI}} & \\colhead{{Classification}} & \\colhead{{Prob.}}
     }}
     \\startdata
 """
+# Add candidates
 for ri, row in df_sa.iterrows():
+    # Get TNS name
+    tns_str = plotting.tns_names[ri]
+
+    # Skip reddening objects
+    if ri in NONCANDIDATES_REDDENING:
+        continue
+
+    # Skip objects that do not peak
+    if ri in NONCANDIDATES_NOPEAK:
+        continue
+
     # Add data
-    tempstr = " & ".join(
-        [plotting.tns_names[ri]] + [str(row[col]) for col in table_cols]
-    )
+    tempstr = " & ".join([tns_str] + [str(row[col]) for col in table_cols])
     # Add newline
     tempstr += r" \\" + "\n"
     # Add to tablestr
     tablestr += tempstr
+
+# Add reddening objects
+tablestr += r"\hline" + "\n"
+tablestr += r"\multicolumn{9}{c}{\textit{Reddening transients}} \\" + "\n"
+tablestr += r"\hline" + "\n"
+for ri, row in df_sa.iterrows():
+    if ri not in NONCANDIDATES_REDDENING:
+        continue
+
+    # Get TNS name
+    tns_str = plotting.tns_names[ri]
+
+    # Add to table
+    tempstr = " & ".join([tns_str] + [str(row[col]) for col in table_cols])
+    tempstr += r" \\" + "\n"
+    tablestr += tempstr
+
+# Add nonpeaking objects
+tablestr += r"\hline" + "\n"
+tablestr += r"\multicolumn{9}{c}{\textit{Transients without peak}} \\" + "\n"
+tablestr += r"\hline" + "\n"
+for ri, row in df_sa.iterrows():
+    if ri not in NONCANDIDATES_NOPEAK:
+        continue
+
+    # Get TNS name
+    tns_str = plotting.tns_names[ri]
+
+    # Add to table
+    tempstr = " & ".join([tns_str] + [str(row[col]) for col in table_cols])
+    tempstr += r" \\" + "\n"
+    tablestr += tempstr
+
 tablestr += f"""\enddata
 \end{{deluxetable*}}"""
 

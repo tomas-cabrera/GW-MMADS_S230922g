@@ -28,19 +28,27 @@ if pa.exists(candidates_table_path):
             "z",
             "z_err",
             "z_source",
+            "z_skymap",
             "CR_2D",
             "CR_3D",
             "parsnip_class",
             "parsnip_prob",
         ],
         na_values=["-", "*"],
-        skiprows=14,
+        skiprows=15,
         skipfooter=2,
         engine="python",
     )
+    # Remove intermediate headers
+    mask = [x.startswith("AT") for x in candidates_table["tnsid"]]
+    candidates_table = candidates_table[mask]
+
+    # Parse ParSNIP probabilities (contain tailing \\)
     candidates_table["parsnip_prob"] = candidates_table["parsnip_prob"].apply(
         lambda x: x.split()[0]
     )
+
+    # Parse z
     candidates_table["z"] = pd.to_numeric(candidates_table["z"])
 
 # Iterate over DECam photometry files
@@ -198,8 +206,11 @@ for oi, tns in enumerate(candidates_table["tnsid"]):
                 data_temp["MAG_APER_DIFF"].value,
                 yerr=data_temp["MAGERR_APER_DIFF"].value,
                 fmt="D",
-                markersize=2,
+                markersize=4,
                 color=plotting.band2color[f],
+                markeredgecolor="k",
+                zorder=-1,
+                # alpha=0.7,
                 # label="Wendelstein",
                 rasterized=True,
             )
@@ -228,7 +239,7 @@ for oi, tns in enumerate(candidates_table["tnsid"]):
     )
 
     # Set title
-    axd["LC"].set_title(tns)
+    axd["LC"].set_title(f"{tns} ({obj})")
     plt.tight_layout()
 
     # Savefig and close
@@ -255,7 +266,7 @@ figpageend_first = f"""
         Light curves for our remaining {len(figpaths) - 1} candidates.
         The dashed line indicates the S230922g event time.
         The sample stamps for each transient are taken from the exposure with the highest SNR, indicated with a gray square.
-        Data taken with Wendelstein appear as small diamonds, where relevant.
+        Data taken with Wendelstein appear as small diamonds, where relevant (the red point for AT 2023uab is r-band).
     }}
     \\label{{fig:light_curves_other}}
 \\end{{figure*}}
