@@ -1,0 +1,33 @@
+% Preamble
+\documentclass[11pt]{article}
+
+% Packages
+\usepackage{amsmath}
+\usepackage{natbib}
+\usepackage{glossaries}
+\usepackage{siunitx}
+\bibliographystyle{authoryear}
+
+\newacronym{3kk}{3KK}{Three Channel Camera}
+\newacronym{ps1}{PS1}{PanSTARRS 1}
+\newacronym{2mass}{2MASS}{Two Micron All Sky Survey}
+\newacronym{nir}{NIR}{near-infrared}
+
+% Document
+\begin{document}
+Fore some transients wee took additional data with the \glspl{3kk} \citep{2016SPIE.9908E..44L} at the \SI{2.1}{\meter}-Fraunhofer Wendelstein Telescope \citep{2014SPIE.9145E..2DH} located in the German alps.
+The instrument is capable of taking three images at the same time in two optical passbands and one \glspl{nir} band.
+For the monitoring of the transients we used the $g$, $i$ and $J$ bands.
+The data were reduced with a pipeline developed at the University Observatory Munich.
+For the detrending of the images the pipeline makes use of the tools from \cite{2002A&A...381.1095G}.
+Then the images are calibrated and coadded using \texttt{SExtractor} \citep{1996A&AS..117..393B}, \texttt{SCAMP} \citep{2006ASPC..351..112B} and \texttt{SWarp} \citep{2002ASPC..281..228B}.
+During this process, the astrometric solution is computed against the GAIA EDR3 catalog \citep{2021A&A...649A...1G} and the zeropoints for the optical bands are calibrated with the \glspl{ps1} catalog \citep{2013ApJS..205...20M}.
+The \glspl{nir} zeropoints are matched to the \glspl{2mass} catalog \citep{2006AJ....131.1163S} and converted to AB magnitudes \citep{2007AJ....133..734B}.
+
+
+% Acknowledgements
+% For SCAMP
+This research has made use of the VizieR catalogue access tool, CDS, Strasbourg, France
+
+\bibliography{wst_reduction}
+\end{document}
