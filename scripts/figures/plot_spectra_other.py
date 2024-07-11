@@ -19,7 +19,7 @@ INTERNAL_ZS = {
     "C202309242206400m275139": (0.184, 3.627e-5),
     "C202309242248405m134956": (0.128, 3.757e-5),
     "C202310042207549m253435": (0.248, 0.001),
-    "A202310262246341m291842": (0.15, 0.001),
+    "A202310262246341m291842": (None, 0.001),
 }
 
 ###############################################################################
@@ -45,10 +45,16 @@ if pa.exists(candidates_table_path):
         skipfooter=2,
         engine="python",
     )
+    # Remove intermediate headers
+    mask = [x.startswith("AT") for x in candidates_table["tnsid"]]
+    candidates_table = candidates_table[mask]
+    print(candidates_table)
+
     candidates_table["parsnip_prob"] = candidates_table["parsnip_prob"].apply(
         lambda x: x.split()[0]
     )
-    candidates_table["z"] = pd.to_numeric(candidates_table["z"])
+
+    # candidates_table["z"] = pd.to_numeric(candidates_table["z"])
 
 # Iterate over DECam photometry files
 DECAM_DIR = paths.PHOTOMETRY_DIR / "DECam" / "diffphot"
@@ -155,15 +161,15 @@ for oi, tns in enumerate(candidates_table["tnsid"]):
     text_height = ylim[0] + text_height_frac * (ylim[1] - ylim[0])
     text_height_offset = (ylim[1] - ylim[0]) * text_height_offset_frac
     for name, params in spectral_lines.items():
+        # Skip if no redshift
+        if INTERNAL_ZS[obj][0] is None:
+            continue
+
         # Shift by redshift
         wl_shifted = [wl * (1 + INTERNAL_ZS[obj][0]) for wl in params["wl"]]
 
         # Skip if not in wavelength range
         if not any([wls > wl_min and wls < wl_max for wls in wl_shifted]):
-            continue
-
-        # Skip for A202310262246341m291842
-        if obj == "A202310262246341m291842":
             continue
 
         # Plot lines
@@ -195,7 +201,7 @@ for oi, tns in enumerate(candidates_table["tnsid"]):
     ax.legend(loc="upper right", frameon=False)
 
     # Set title
-    ax.set_title(tns)
+    ax.set_title(f"{tns} ({obj})")
     plt.tight_layout()
 
     # Savefig and close
@@ -221,7 +227,7 @@ figpagestart_first = f"""
 figpageend_first = f"""
     \\caption{{
         Additional spectra taken as a part of our follow-up campaign.
-        A selection of spectral lines and telluric features are marked as in Figure \ref{{fig:C202309242206400m275139}}.
+        A selection of spectral lines and telluric features are marked as in Figure \\ref{{fig:C202309242206400m275139}}.
     }}
     \\label{{fig:{pa.basename(__file__).replace(".py", "")}}}
 \\end{{figure*}}

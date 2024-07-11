@@ -105,6 +105,12 @@ NONCANDIDATES_POSTPROCESSING = [
     "C202309242224327m160704",
 ]
 
+# Spectroscopically excluded
+NONCANDIDATES_SPECTROSCOPIC = [
+    "C202309242248405m134956",
+    "A202310262246341m291842",
+]
+
 # Persisting transients that redden
 NONCANDIDATES_REDDENING = [
     # getting redder
@@ -115,7 +121,6 @@ NONCANDIDATES_REDDENING = [
     "C202309242214247m221046",
     "A202309242247422m260221",
     "C202309242246522m280621",
-    "A202310262246341m291842",
     "C202310042207549m253435",
     "A202309242207556m282406",
 ]
@@ -274,6 +279,29 @@ df_sa["skymap_z_str"] = df_sa[["skymap_z", "skymap_z_hi", "skymap_z_lo"]].apply(
     format_skymap_z,
     axis=1,
 )
+
+
+def format_skymap_dL(row):
+    # Get z and z_err
+    z = row["skymap_distmu"]
+    z_err = row["skymap_distsigma"]
+
+    # nan z
+    if np.isnan(z):
+        return "-"
+
+    # nan z_err
+    if np.isnan(z_err):
+        return f"{z:.0f}"
+
+    return f"${z:.0f} \\pm {z_err:.0f}$"
+
+
+df_sa["skymap_dL_str"] = df_sa[["skymap_distmu", "skymap_distsigma"]].apply(
+    # lambda x: f"{x.value:.3f}",
+    format_skymap_dL,
+    axis=1,
+)
 df_sa["skymap_searched_prob_str"] = df_sa["skymap_searched_prob"].apply(
     lambda x: f"{x:.3f}"
 )
@@ -329,7 +357,8 @@ table_cols = [
     "table_z_str",
     # "table_z_err_str",
     "table_z_source_str",
-    "skymap_z_str",
+    # "skymap_z_str",
+    "skymap_dL_str",
     "skymap_searched_prob_str",
     "skymap_searched_prob_vol_str",
     "table_parsnip_class_str",
@@ -349,14 +378,15 @@ tablestr = f"""\\startlongtable
     \\label{{tab:candidates}}
     \\tablecaption{{
         Summary table for our counterpart candidate shortlist.
-        Redshifts are shown as available from crossmatching with several extragalactic databases and direct measurement for the objects which we took spectra.
-        The objects are sorted by ascending 2D skymap probability, s.t. the objects in the highest probability regions are listed first.
+        Redshifts are shown as available from crossmatching with several extragalactic databases and direct measurement from our spectra.
+        The luminosity distances and uncertainties are reproduced from the GW skymap, using the \\texttt{{DISTMU}} and \\texttt{{DISTSIGMA}} values for the HEALPix tile in which the transient is located.
+        The objects are sorted by ascending 2D skymap probability CI, s.t. the objects in the highest probability regions are listed first.
         The highest probability ParSNIP photometric classification along with the probability are listed in the last two columns; in this work, we rename the ParSNIP class ``TDE" as ``Non-SN" (see text).
-        The last two subdivisions of the table include transients that reddened in later epochs and those that did not peak during our observation window.
+        The last three subdivisions of the table include transients that did not peak during our observation window, those that reddened in later epochs, and those that were exluded as possible counterparts through spectroscopic classification.
     }}
     \\tablehead{{
         \\colhead{{Object}} & \\multicolumn{{2}}{{c}}{{Host redshift}} & \\multicolumn{{3}}{{c}}{{GW skymap}} & \\multicolumn{{2}}{{c}}{{\\colhead{{ParSNIP}}}} \\\\
-        & \\colhead{{$z_{{\\rm host}}$}} & \\colhead{{$z_{{\\rm host}}$ source}} & \\colhead{{$z_{{\\rm skymap}}$}} & \\colhead{{2D CI}} & \\colhead{{3D CI}} & \\colhead{{Classification}} & \\colhead{{Prob.}}
+        & \\colhead{{$z_{{\\rm host}}$}} & \\colhead{{$z_{{\\rm host}}$ source}} & \\colhead{{$d_L$ [Mpc]}} & \\colhead{{2D CI}} & \\colhead{{3D CI}} & \\colhead{{Classification}} & \\colhead{{Prob.}}
     }}
     \\startdata
 """
@@ -377,11 +407,31 @@ for ri, row in df_sa.iterrows():
     if ri in NONCANDIDATES_NOPEAK:
         continue
 
+    # Skip spectroscopically excluded objects
+    if ri in NONCANDIDATES_SPECTROSCOPIC:
+        continue
+
     # Add data
     tempstr = " & ".join([tns_str] + [str(row[col]) for col in table_cols])
     # Add newline
     tempstr += r" \\" + "\n"
     # Add to tablestr
+    tablestr += tempstr
+
+# Add nonpeaking objects
+tablestr += r"\hline" + "\n"
+tablestr += r"\multicolumn{8}{c}{\textit{Transients without peak}} \\" + "\n"
+tablestr += r"\hline" + "\n"
+for ri, row in df_sa.iterrows():
+    if ri not in NONCANDIDATES_NOPEAK:
+        continue
+
+    # Get TNS name
+    tns_str = plotting.tns_names[ri]
+
+    # Add to table
+    tempstr = " & ".join([tns_str] + [str(row[col]) for col in table_cols])
+    tempstr += r" \\" + "\n"
     tablestr += tempstr
 
 # Add reddening objects
@@ -402,10 +452,10 @@ for ri, row in df_sa.iterrows():
 
 # Add nonpeaking objects
 tablestr += r"\hline" + "\n"
-tablestr += r"\multicolumn{8}{c}{\textit{Transients without peak}} \\" + "\n"
+tablestr += r"\multicolumn{8}{c}{\textit{Excluded via spectra}} \\" + "\n"
 tablestr += r"\hline" + "\n"
 for ri, row in df_sa.iterrows():
-    if ri not in NONCANDIDATES_NOPEAK:
+    if ri not in NONCANDIDATES_SPECTROSCOPIC:
         continue
 
     # Get TNS name

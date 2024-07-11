@@ -26,7 +26,7 @@ if pa.exists(candidates_table_path):
         names=[
             "tnsid",
             "z",
-            "z_err",
+            # "z_err",
             "z_source",
             "z_skymap",
             "CR_2D",
@@ -42,14 +42,15 @@ if pa.exists(candidates_table_path):
     # Remove intermediate headers
     mask = [x.startswith("AT") for x in candidates_table["tnsid"]]
     candidates_table = candidates_table[mask]
+    print(candidates_table)
 
     # Parse ParSNIP probabilities (contain tailing \\)
     candidates_table["parsnip_prob"] = candidates_table["parsnip_prob"].apply(
         lambda x: x.split()[0]
     )
 
-    # Parse z
-    candidates_table["z"] = pd.to_numeric(candidates_table["z"])
+    # # Parse z
+    # candidates_table["z"] = pd.to_numeric(candidates_table["z"])
 
 # Iterate over DECam photometry files
 DECAM_DIR = paths.PHOTOMETRY_DIR / "DECam" / "diffphot"
@@ -266,7 +267,7 @@ figpageend_first = f"""
         Light curves for our remaining {len(figpaths) - 1} candidates.
         The dashed line indicates the S230922g event time.
         The sample stamps for each transient are taken from the exposure with the highest SNR, indicated with a gray square.
-        Data taken with Wendelstein appear as small diamonds, where relevant (the red point for AT 2023uab is r-band).
+        Data taken with Wendelstein appear as small diamonds, where relevant (the red point for AT 2023uab is J-band).
     }}
     \\label{{fig:light_curves_other}}
 \\end{{figure*}}

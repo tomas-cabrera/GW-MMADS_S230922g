@@ -249,6 +249,11 @@ def plot_coverage(
             engine="python",
         )
 
+        # Remove intermediate headers
+        mask = [x.startswith("AT") for x in candidates_table["tnsid"]]
+        candidates_table = candidates_table[mask]
+        print(candidates_table)
+
         # Get internal names
         candidate_names = []
         for tnsid in candidates_table["tnsid"]:
