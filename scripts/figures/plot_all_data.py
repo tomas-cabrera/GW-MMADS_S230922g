@@ -6,8 +6,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 import sncosmo
 import tol_colors as tc
+from astropy.coordinates import SkyCoord
 from astropy.io import fits
 from astropy.time import Time
+import astropy.units as u
+from dustmaps.sfd import SFDQuery
 
 import scripts.utils.light_curves as mylc
 from scripts.utils import paths, plotting
@@ -200,10 +203,21 @@ for oi, obj in enumerate(plotting.spectra_objs):
     #     rasterized=True,
     # )
 
-    # Plot square indicating the time of the max snr
+    ### Plot square indicating the time of the max snr
+    # Correct for extinction
+    # Make coordinates object
+    radeg, decdeg = plotting.candname_to_radec(obj)
+    sc = SkyCoord(ra=radeg, dec=decdeg, unit=u.deg)
+
+    # Get extinction
+    sfd = SFDQuery()
+    ebv = sfd(sc)
+
+    # Convert extinction to extinction in band
+    ex_corr = ebv * mylc.band2ebvcoeff_sf11[maxsnr_row["FILTER"]]
     ax.plot(
         maxsnr_row["MJD_OBS"],
-        maxsnr_row["MAG_FPHOT"],
+        maxsnr_row["MAG_FPHOT"] + ex_corr,
         color="k",
         marker="s",
         fillstyle="none",

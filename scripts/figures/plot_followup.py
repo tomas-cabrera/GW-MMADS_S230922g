@@ -254,11 +254,17 @@ def plot_coverage(
         candidates_table = candidates_table[mask]
         print(candidates_table)
 
+        # Spectroscopically excluded
+        NONCANDIDATES_SPECTROSCOPIC = [
+            "C202309242248405m134956",
+            "A202310262246341m291842",
+        ]
+
         # Get internal names
         candidate_names = []
         for tnsid in candidates_table["tnsid"]:
             for obj, tns in plotting.tns_names.items():
-                if tns == tnsid:
+                if tns == tnsid and obj not in NONCANDIDATES_SPECTROSCOPIC:
                     candidate_names.append(obj)
                     break
     cand_coords = np.array([plotting.candname_to_radec(c) for c in candidate_names])

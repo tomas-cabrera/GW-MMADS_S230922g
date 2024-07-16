@@ -8,11 +8,13 @@ import numpy as np
 import pandas as pd
 import sncosmo
 from astropy import units as u
+from astropy.coordinates import SkyCoord
 from astropy.io import fits
 from astropy.table import Table
 from astropy.time import Time
 from matplotlib.lines import Line2D
 from scipy.stats import norm
+from dustmaps.sfd import SFDQuery
 
 from scripts.utils import paths, plotting
 
@@ -28,6 +30,18 @@ band2central_wavelength = {
     "z": 926.0 * u.nm,
     "Y": 1009.0 * u.nm,
     "VR": 626.0 * u.nm,
+}
+
+# Coefficients for converting E(B-V)_{SFD} exitinction to extinction in a given DECam band
+band2ebvcoeff_sf11 = {
+    # "u": 4.798,
+    "g": 3.327,
+    "r": 2.176,
+    "i": 1.595,
+    "z": 1.217,
+    "Y": 1.058,
+    # "VR": 2.471,
+    "J": 0.709,
 }
 
 KIMURA20_SF_PARAMS = pd.read_csv(
@@ -165,9 +179,13 @@ def plot_light_curve_from_file(
     ax=None,
     band2color=plotting.band2color,
     plot_legend=True,
+    correct_extinction=True,
     **kwargs,
 ):
     with fits.open(fitsname) as hdul:
+        # Extract object name
+        objid = pa.basename(fitsname).split("_")[1].split(".")[0]
+
         # Load data
         data = hdul[1].data
 
@@ -214,6 +232,20 @@ def plot_light_curve_from_file(
                 # Define mask
                 mask = filter_mask & (y < 25) & (data["STATUS_FPHOT"] == d)
 
+                # Correct for extinction, if prompted
+                ex_corr = 0
+                if correct_extinction:
+                    # Make coordinates object
+                    radeg, decdeg = plotting.candname_to_radec(objid)
+                    sc = SkyCoord(ra=radeg, dec=decdeg, unit=u.deg)
+
+                    # Get extinction
+                    sfd = SFDQuery()
+                    ebv = sfd(sc)
+
+                    # Convert extinction to extinction in band
+                    ex_corr = ebv * band2ebvcoeff_sf11[f]
+
                 # Define marker
                 if marker is None:
                     if f == "g":
@@ -229,7 +261,7 @@ def plot_light_curve_from_file(
                     # Plot
                     plot_light_curve(
                         time[mask],
-                        y[mask],
+                        y[mask] + ex_corr,
                         y_err[mask],
                         f,
                         ax=ax,

@@ -8,6 +8,10 @@ data
 tex/figures/*
 tex/output/*
 tex/tables/*
+!tex/figures/during_merger_240115.pdf
+!tex/figures/MgII_fit.pdf
+!tex/figures/Model_Fig.png
+!tex/figures/S230922g_spectra.pdf
 
 # pycache
 **/__pycache__

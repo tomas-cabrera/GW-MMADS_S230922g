@@ -103,6 +103,7 @@ NONCANDIDATES_POSTPROCESSING = [
     "C202309242248465m232916",
     "C202310042258174m224619",
     "C202309242224327m160704",
+    "C202310042258328m202211",
 ]
 
 # Spectroscopically excluded
@@ -132,6 +133,8 @@ NONCANDIDATES_NOPEAK = [
     "C202309242224596m265957",
     "A202309242229429m265636",
     "A202312232207465m275903",
+    "A202310042250545m160517",
+    "A202309242208066m244517",
 ]
 
 ####################################################################################################
@@ -373,8 +376,7 @@ df_sa.sort_values("skymap_searched_prob", inplace=True)
 ##############################
 
 # Iterate over rows
-tablestr = f"""\\startlongtable
-\\begin{{deluxetable*}}{{cccccccc}}
+tablestr = f"""\\begin{{deluxetable*}}{{cccccccc}}
     \\label{{tab:candidates}}
     \\tablecaption{{
         Summary table for our counterpart candidate shortlist.
@@ -385,7 +387,7 @@ tablestr = f"""\\startlongtable
         The last three subdivisions of the table include transients that did not peak during our observation window, those that reddened in later epochs, and those that were exluded as possible counterparts through spectroscopic classification.
     }}
     \\tablehead{{
-        \\colhead{{Object}} & \\multicolumn{{2}}{{c}}{{Host redshift}} & \\multicolumn{{3}}{{c}}{{GW skymap}} & \\multicolumn{{2}}{{c}}{{\\colhead{{ParSNIP}}}} \\\\
+        \\colhead{{Object}} & \\multicolumn{{2}}{{c}}{{Host redshift}} & \\multicolumn{{3}}{{c}}{{GW skymap}} & \\multicolumn{{2}}{{c}}{{ParSNIP}} \\\\
         & \\colhead{{$z_{{\\rm host}}$}} & \\colhead{{$z_{{\\rm host}}$ source}} & \\colhead{{$d_L$ [Mpc]}} & \\colhead{{2D CI}} & \\colhead{{3D CI}} & \\colhead{{Classification}} & \\colhead{{Prob.}}
     }}
     \\startdata

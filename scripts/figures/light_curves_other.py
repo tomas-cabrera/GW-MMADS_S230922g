@@ -5,9 +5,12 @@ from glob import glob
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from astropy.coordinates import SkyCoord
 from astropy.io import fits
 from astropy.table import Table
 from astropy.time import Time
+import astropy.units as u
+from dustmaps.sfd import SFDQuery
 
 import scripts.utils.light_curves as mylc
 from scripts.utils import paths, plotting
@@ -191,6 +194,19 @@ for oi, tns in enumerate(candidates_table["tnsid"]):
 
         # Iterate over filters
         for f in np.unique(wendelstein_data["FILTER"]):
+
+            # Correct for extinction
+            # Make coordinates object
+            radeg, decdeg = plotting.candname_to_radec(obj)
+            sc = SkyCoord(ra=radeg, dec=decdeg, unit=u.deg)
+
+            # Get extinction
+            sfd = SFDQuery()
+            ebv = sfd(sc)
+
+            # Convert extinction to extinction in band
+            ex_corr = ebv * mylc.band2ebvcoeff_sf11[maxsnr_row["FILTER"]]
+
             # Mask data
             mask = wendelstein_data["FILTER"] == f
             mask = mask & (wendelstein_data["MAG_APER_DIFF"] != 99)
@@ -204,7 +220,7 @@ for oi, tns in enumerate(candidates_table["tnsid"]):
             # Plot data
             ax.errorbar(
                 data_temp["MJD_OBS"].value,
-                data_temp["MAG_APER_DIFF"].value,
+                data_temp["MAG_APER_DIFF"].value + ex_corr,
                 yerr=data_temp["MAGERR_APER_DIFF"].value,
                 fmt="D",
                 markersize=4,
@@ -216,10 +232,21 @@ for oi, tns in enumerate(candidates_table["tnsid"]):
                 rasterized=True,
             )
 
-    # Plot square indicating the time of the max snr
+    ### Plot square indicating the time of the max snr
+    # Correct for extinction
+    # Make coordinates object
+    radeg, decdeg = plotting.candname_to_radec(obj)
+    sc = SkyCoord(ra=radeg, dec=decdeg, unit=u.deg)
+
+    # Get extinction
+    sfd = SFDQuery()
+    ebv = sfd(sc)
+
+    # Convert extinction to extinction in band
+    ex_corr = ebv * mylc.band2ebvcoeff_sf11[maxsnr_row["FILTER"]]
     ax.plot(
         maxsnr_row["MJD_OBS"],
-        maxsnr_row["MAG_FPHOT"],
+        maxsnr_row["MAG_FPHOT"] + ex_corr,
         color="k",
         marker="s",
         fillstyle="none",
@@ -264,16 +291,16 @@ figpagestart_first = f"""
 """
 figpageend_first = f"""
     \\caption{{
-        Light curves for our remaining {len(figpaths) - 1} candidates.
+        Light curves for our remaining {len(figpaths) - 1} candidates (continued in following figures).
         The dashed line indicates the S230922g event time.
         The sample stamps for each transient are taken from the exposure with the highest SNR, indicated with a gray square.
-        Data taken with Wendelstein appear as small diamonds, where relevant (the red point for AT 2023uab is J-band).
+        Data taken with Wendelstein appear as small diamonds, where relevant (the red point for AT 2023uab is $J$-band).
     }}
     \\label{{fig:light_curves_other}}
 \\end{{figure*}}
 """
 figpagestart = f"""
-\\begin{{figure*}}\ContinuedFloat
+\\begin{{figure*}}
     \\centering
 """
 
