@@ -3,6 +3,7 @@
 
 \usepackage[acronym]{glossaries}
 \usepackage{xspace}
+\usepackage{ulem}
 
 % Commands
 \newcommand{\gweventid}{S230922g\xspace}
@@ -26,6 +27,8 @@
     Ludwig-Maximilians-Universität München,
     Scheinerstr. 1, 81679 Munich, Germany
 }
+\definecolor{maroon}{rgb}{0.5, 0.0, 0.0}
+\newcommand{\response}[1]{\textbf{\textcolor{maroon}{#1}}}
 
 
 % Acronyms
@@ -60,7 +63,7 @@
 \newacronym{gwmmads}{GW-MMADS}{Gravitational Wave MultiMessenger Astronomy DECam Survey}
 \newacronym{snr}{SNR}{signal-to-noise ratio}
 \newacronym{noirlab}{NOIRLab}{NSF National Optical-Infrared Research Laboratory}
-\newacronym{cnn}{CNN}{Convolutional Neural Network}
+\newacronym{cnn}{CNN}{convolutional neural network}
 \newacronym{parsnip}{ParSNIP}{Parameterization of SuperNova Intrinsic Properties}
 \newacronym[plural=SNe, firstplural=supernovae]{sn}{SN}{supernova}
 \newacronym{blr}{BLR}{broad-line region}
@@ -177,6 +180,10 @@
 \author[0000-0003-0738-8186]{Jake Postiglione}
 \affiliation{Department of Science, BMCC, City University of New York, New York, NY 10007, USA}
 
+\author[0000-0002-5466-3892]{Arno Riffeser}
+\affiliation{\usm}
+\affiliation{Max Planck Institute for Extraterrestrial Physics, Giessenbachstr. 1, 85748 Garching, Germany}
+
 \author[0000-0002-1154-8317]{Julian S. Sommer}
 \affiliation{\usm}
 
@@ -209,7 +216,7 @@ This single event by itself was enough to result in hundreds of analyses, includ
 In the case of $H_{\rm 0}$, it is predicted that $\mathcal{O}(100)$ \gls{bns} events with \gls{em} counterparts are required to make a $\sim$few\% measurement of the parameter \citep{chenTwoCentHubble2018}, although joint multimessenger constraints on the binary viewing angle can further improve precision by a factor of a few (e.g. \citealt{Hotokezaka2019, palmese2024standard}).
 
 While \gls{bns} mergers are the only class of \gls{gw} event with a confirmed \gls{em} counterpart, it is also predicted that \gls{bbh} mergers can produce counterparts in certain circumstances.
-The majority of proposed counterpart mechanisms involve the interaction of the binary or merger remnant with a coexistent medium, usually the gaseous accretion disk of an \gls{agn}, whether through accretion \citep{bartosRapidBrightStellarmass2017}, ram-pressure stripping of gas about the remnant or jetted Bondi accretion \citep{mckernanRampressureStrippingKicked2019}, or breakout emission from a post-merger jet \citep{tagawaObservableSignatureMerging2023,Tagawa:2023gpi}. 
+The majority of proposed counterpart mechanisms involve the interaction of the binary or merger remnant with a coexistent medium, usually the gaseous accretion disk of an \gls{agn}, whether through accretion \citep{bartosRapidBrightStellarmass2017}, ram-pressure stripping of gas about the remnant or jetted Bondi accretion \citep{mckernanRampressureStrippingKicked2019}, \response{or breakout emission from accretion \citep{2021ApJ...916..111K, 2024arXiv240709945R}} or a post-merger jet \citep{tagawaObservableSignatureMerging2023,Tagawa:2023gpi}. 
 A cartoon of the \gls{agn}-associated \gls{em} counterpart mechanism is show in Figure~\ref{fig:model}.
 
 \begin{figure*}
@@ -269,7 +276,7 @@ These quantities are reported with the skymap from the \texttt{Bilby} \citep{Ash
 Higher mass ($M_{\rm tot} \gtrsim 50~M_\odot$) \gls{bbh} mergers are more likely to have originated from the disks of \glspl{agn} (e.g. \citealt{Gayathri_2021}), and so we also inform our decision to trigger \gls{bbh} follow up by estimating the total mass of the binary.
 We follow a similar calculation to that in \citet{grahamCandidateElectromagneticCounterpart2020}, and consider that $A_{90}\propto~{\rm SNR}^{-2}$ \citep{Berry_2015}, as well as ${\rm SNR}\propto \mathcal{M}_c^{5/6}/d_L$ \citep{Finn_1993}, where $\mathcal{M}_c$ is the chirp mass of the binary.
 For this event, we assume a 1.4-1.4 $M_\odot$ binary neutron star merger detection horizon of 150 and 152 Mpc for Hanford and Livingston, respectively, an equal mass system, and the luminosity distance marginalized over the sky; we derive a total rest frame mass of $M_{\rm tot} \sim 90~M_\odot$ for \gweventid.
-Note that this estimate is highly uncertain with an error bar of at least a factor of 2.
+\response{The BNS merger detection horizon serves as an additional scaling factor in the overall calculation.} Note that this estimate is highly uncertain with an error bar of at least a factor of 2. \response{This uncertainty is informed from the calibration of the proposed mass relationship with the LIGO O3 BBH data set.}
 
 \subsection{DECam observations}\label{subsec:observations}
 
@@ -294,7 +301,7 @@ When this plan was finalized, we communicated our pointings to the larger astron
     \label{fig:plot_followup}
 \end{figure}
 
-Leading \gls{bbh} counterpart models predict delays of 1-3 weeks after the merger before the manifestation of any \gls{em} counterpart, due to the need for the signal to first emerge from the depths of the \gls{agn} disk.
+\response{Because most \gls{bbh} counterpart models concern the emergence of an \gls{em} signature from the interior of an \gls{agn} disc, delays of $\mathcal{O}(10-100)$ days are expected before such a signature becomes observable}.
 Even so, it is valuable to initiate \gls{em} follow up for these kinds of events within a few days of the \gls{gw} trigger, as high-cadence archival data are generally not available in the localization area of a given \gls{gw} event and a baseline of sources in the localization area can be useful when vetting candidates.
 Accordingly, we decided to trigger our \gls{too} program for the night following the event (the evening of September 22, 2023) in order to establish a baseline of activity at the \gls{gw} merger time and to facilitate the identification of novel phenomena in subsequent observing epochs.
 
@@ -357,8 +364,9 @@ Our image differencing pipeline detected over 25 million transient features in o
 Table \ref{tab:vetting} summarizes the vetting steps we applied, which are described in this section.
 
 We first remove any detections on difference images contaminated by bad pixels recorded in the \gls{decam} \gls{cp} data quality mask products.
-Surviving features were then scored using a \gls{cnn} trained on archival \gls{decam} data products from our pipeline to perform real/bogus classification.
-Possible \gls{cnn} scores range from 0 to 1, with higher scores associated with more realistic astrophysical objects; at this step we kept any detections with scores greater than 0.7.
+Surviving features were then scored using a \response{rotation-invariant \gls{cnn} \citep{2017ApJ...836...97C, 2022FrASS...9.7100S}} trained on archival \gls{decam} data products from our pipeline to perform real/bogus classification.
+Possible \gls{cnn} scores range from 0 to 1, with higher scores associated with more realistic astrophysical objects.
+\response{From testing on archival \gls{decam} data a threshold of 0.7 was found to facilitate a 98\% recall rate with a 7.2\% bogus contamination rate; this threshold was accepted as our cutoff for this analysis.}
 Roughly 6\% of the initial list of detections passed these steps to form our list of real astrophysical detections.
 
 These detections were then cross-matched among themselves to identify features present in data from multiple epochs and filters; the resulting list of transients consisted of 233,313 objects.
@@ -413,7 +421,7 @@ Internal names are assembled from the date of discovery and RA/dec of the source
 The leading character in the object names indicates the proximity of the transient to the nearest galaxy-type \gls{ls} source, in the same convention explained in \S\ref{subsec:autovet} (``A" for nuclear sources, ``T" for non-nuclear sources, and ``C" for marginally nuclear sources).
 The internal names for all transients in our shortlist can be found in the subfigure titles of Figure~\ref{fig:light_curves_other}.
 
-\subsection{AT 2023aagj (C2023092422006400m275139)}
+\subsection{AT 2023aagj (C202309242206400m275139)}
 \label{subsec:AT2023aagj}
 
 We consider AT 2023aagj to be the transient from our sample most likely to be an optical counterpart to \gweventid.
@@ -429,7 +437,7 @@ Difference photometry, spectra, and sample stamps for this candidate are visible
         Observational data for AT 2023aagj.
         \textit{Upper left:} Difference photometry for the transient.
         $g(i)$-band data are shown in green (yellow). %, and upper limits are indicated with hollow triangles.
-        The colored vertical lines in the light curve plot indicate the times additional data (spectra and X-ray) were taken.
+        \response{The dashed gray line marks the GW event time of S230922g, and} the colored vertical lines indicate the times additional data (spectra and X-ray) were taken.
         \textit{Upper right:} Stamps from the template, science, and difference images for a sample epoch; the epoch from which the sample stamps are taken is outlined in the photometry plot with a gray square.
         \textit{Center left:}
         WISE photometry for the host of AT 2023aagj.
@@ -472,11 +480,16 @@ The data were reduced with \gls{dragons} \citep{labrieDRAGONSDataReduction2019},
 \gls{wise} \citep{wrightWIDEFIELDINFRAREDSURVEY2010} infrared data for the host of this event is shown in Figure~\ref{fig:C202309242206400m275139}.
 Following \citet{Clark2024}, we retrieved this data from the NASA/IPAC infrared science archive (IRSA)\footnote{\url{https://irsa.ipac.caltech.edu/}}, utilizing data from both the ALLWISE \citep{wright_2010_WIDEFIELDINFRAREDSURVEY} and NEOWISE Reactivation Releases \citep[NEOWISE-R;][]{mainzer_2011_NEOWISEOBSERVATIONSNEAREARTH, mainzer_2014_INITIALPERFORMANCENEOWISE}.
 Individual observations are combined following quality control cuts to obtain one mean magnitude per filter for each observation period, providing a $\sim$~6 month cadence.
-Notably, there are variations in the host system of similar amplitude to our detected transient, but it must be recognized that such variations occur on much longer ($\sim10\times$) timescales than the timescale of AT 2023aagj.
-We compare this behaviour with publicly available PanSTARRS \citep{Flewelling_2020} and DECam images at this location, which, although sparse, do not show any significant change in flux. We observe that a significant jump of $\sim 0.3$ mag in $g$ band 5" aperture magnitude occurred according to the SkyMapper data release \citep{skymapper} between MJD $\sim$57650 and $\sim$57850. 
-It is possible that an associated optical signature existed in that time period, but was %unobserved due to being obscured by dust, 
-missed by the relatively sparse nature of the optical observations, and the \gls{ir} component we observed was delayed from the optical via dust reprocessing.
-We do not observe a rebrightening of the source in the WISE bands over the timescale of the optical transient, but there appears to be a $\sim 0.1$ increase in magnitude in December 2023, potentially indicating the start of a reprocessed, delayed emission from the event.
+\response{
+The host is found to have brightened by $\sim$0.2 mag (with typical photometric uncertainties $\sim$0.05 mag) in both W1 and W2 bands starting around MJD 57900.
+The SkyMapper data release \citep{skymapper} shows that the object brightened by $\sim$0.13/0.1 mag (uncertainties $\sim$0.05 mag) in $g$/$r$-band 5" aperture photometry over MJD 57870-57875.
+A possible explanation for these phenomena identifies the \gls{ir} component as a reprocessed signature of the optical event; while blue, this event is slower than AT 2023aagj, which at one point brightened by $\sim$0.4 mag in both $g$ and $i$ band over a 5 day interval.
+We also examine archival DECam and PanSTARRS \citep{Flewelling_2020} data covering this object, but are unable to put further constraints on past activity in part due to the sparse temporal coverage of these datasets in this region.
+}
+%SkyMapper: g-band: 0.128mag=3.2sigma between 57870 and 57875; r-band: 0.097mag=2.4sigma over same interval
+%WISE: W1: 0.1527mag=4.45sigma between 60080 and 60243; W2: 0.203mag=2.7sigma between same MJDs
+%(sigmas calculated using largest uncertainty over the interval)
+
 
 We also produce a \gls{wise} color-color plot for W1-W2 versus W2-W3, although this is not shown as W3 is only available in one epoch, which may not be representative of the entire color evolution of the object over the past years.
 By comparison with populations of extragalactic objects (as defined in \citealt{wrightWIDEFIELDINFRAREDSURVEY2010}) we find that while the host most clearly lies in the \gls{wise} population regions associated with spiral and luminous infrared galaxies, it is near the boundary into the Seyfert and quasar parameter spaces, and %as shown in the variability plots 
@@ -535,13 +548,16 @@ This, in concert with \gls{parsnip} classifying the object as a type Ia \gls{sn}
 \section{Discussion}
 \label{sec:discussion}
 
-Taking our favored counterpart candidate of AT 2023aagj, we work under the assumption that the transient is related to \gweventid and try to infer whether the the properties of the flare may be consistent with expectations for the counterpart signal, mechanism, and host. 
-
-What can be noted is that the persistent blue color is unlike typical supernovae, and \gls{sf} arguments as in \cite{palmeseLIGOVirgoBlack2021} show that this transient is distinguished from typical \gls{agn} activity at the 5.9$\sigma$ level (corresponding to a one-sided probability $p_{\rm flare} \sim \mathcal{O}(10^{-16})$).
+\response{
+We return to our favored counterpart candidate AT 2023aagj and assess its significance as an \gls{agn} transient.
+The persistent blue color of the transient distinguishes it from the phenomenology of typical supernovae, a separation further supported by a \gls{parsnip} classification of ``TDE"/``Non-SN" as noted above.
+We apply \gls{sf} arguments as presented in \citep{palmeseLIGOVirgoBlack2021} to the photometry to calculate the probability that the observed variation occurred as a result of typical \gls{agn} activity.
+We find the variability of AT 2023aagj significant on the 5.9$\sigma$ level, with an associated one-sided Gaussian probability of $\sim 10^{-16}$; such a low value makes it highly unlikely that AT 2023aagj is a feature of the host \gls{agn}'s activity, and strongly prefers the model of AT 2023aagj as a specially transient phenomenon.
+}
 % p(chance coincidence) = n_AGN * (t_followup / deltat_rise) * p(deltam, SF) = O(10^3) * ((60313.04395136 - 60221.01891722) / 23.83) * (1.16 * 10^(-16)) = 4.5 x 10^(-13)
 % t_followup is calculated as the delta between the second and the last epoch (b/c this is the time frame where we would detect such a flare - we need 2+ epochs)
 % These numbers are using the difference photometry
-Taking the 90\% \gls{ci} volume of the event as $3.73 \times 10^8$ Mpc$^3$ (as calculated with \texttt{ligo.skymap}) and a fiducial \gls{agn} number density of $10^{-4.75}$ Mpc$^{-3}$ \citep{bartosGravitationalwaveLocalizationAlone2017a,Greene:2007xw}, we estimate a count of 6600 \gls{agn} in the volume.
+Taking the 90\% \gls{ci} volume of the event as $3.73 \times 10^8$ Mpc$^3$ (as calculated with \texttt{ligo.skymap}) and fiducial \gls{agn} number densities of $10^{-4.75}$ Mpc$^{-3}$ \response{and $10^{-4}$ Mpc$^{-3}$} (\citealt{bartosGravitationalwaveLocalizationAlone2017a,Greene:2007xw}; \response{the two values reflect expected and conservative (more \gls{agn}/background flares) rates}), we estimate counts of 6600 \response{and 37000 \gls{agn}} in the volume.
 Alternatively, crossmatching the Milliquas \citep{fleschMillionQuasarsMilliquas2023} quasar catalog with the skymap (also with \texttt{ligo.skymap}) yields a 3D match of 826 objects.
 Given the discovery window of our follow-up campaign $t_{\rm window} = 92$ days (calculated as the difference in time between the second epoch and the last), we calculate the probability of a chance discovery of a similar flare as
 \begin{equation}
@@ -549,7 +565,9 @@ Given the discovery window of our follow-up campaign $t_{\rm window} = 92$ days 
     = n_{\rm AGN} \frac{t_{\rm window}}{\Delta t_{\rm rise}} p_{\rm flare}
     \approx \left( 4.48 \times 10^{-16} \frac{\text{flares}}{\text{AGN}} \right) n_{\rm AGN},
 \end{equation}
-which predicts $p_{cc} \sim \mathcal{O}(10^{-12})$ and $p_{cc} \sim \mathcal{O}(10^{-13})$ for the number density and Milliquas estimates, respectively.
+which predicts $p_{cc} \sim \mathcal{O}(10^{-12})$ \response{and $\mathcal{O}(10^{-11})$}, and $p_{cc} \sim \mathcal{O}(10^{-13})$ for the number density and Milliquas estimates, respectively.
+\response{
+We note that while these rates distinguish AT 2023aagj as a special event, due to uncertainties in the understanding of \gls{bbh} counterpart morphology the identity of AT 2023aagj as a counterpart to S230922g remains largely uncertain. A caveat of this analysis is that we also cannot account for the variability of this specific AGN given the lack of long-term monitoring from archival data.}
 
 We compare our candidate flare with the sample of \gls{ztf} transients from \citet{grahamLightDarkSearching2023}.
 Assuming a roughly constant spectral flux density across the $g$- and $B$-band frequency domain, we apply the $B$ bandpass bolometric correction of 5.15 from \citet{durasUniversalBolometricCorrections2020} to derive a total flare energy of
@@ -587,7 +605,7 @@ Since $t_{\rm exit} \sim 2\text{ days}$, $\tau_{\rm mp} \sim 10^{[3,6]}$ yields 
 This implies a thin disk, possibly similar to the thin regions of a \citet{TQM05} model, which also has a lower $\tau_{\rm mp}$ than other models such as \citet{SG03}.
 The thinner regions of \gls{agn} disks are where gas damping is most efficient and consequently where mergers are more likely to occur \citep{McK24}.
 
-If we assume from Figure~\ref{fig:C202309242206400m275139} that the flare begins 2 days post-\gweventid (denoted by a vertical line), and the flare lasts through the spectra denoted by the blue and red lines, then the overall flare duration is $t_{\rm flare} \sim \mathcal{O}(10^{2})$days.
+If we assume from Figure~\ref{fig:C202309242206400m275139} that the flare begins 2 days post-\gweventid, and the flare lasts through the spectra denoted by the blue and red lines, then the overall flare duration is $t_{\rm flare} \sim \mathcal{O}(10^{2})$days. \response{We note that this is to be considered a rough estimate of the flare timescale in what follows.}
 Given $E_{\rm tot} \sim 10^{50}{\rm erg}$, the average luminosity of the flare is ${\overline{L}_{\rm flare}} \sim 10^{43}{\rm erg/s}$, which can be parameterized as $\overline{L}_{\rm flare}  \sim 10^{3}L_{\rm Edd}(M_{\rm BBH}/90M_{\odot})$ where $L_{\rm Edd}$ is the Eddington luminosity.
 If we parameterize the Bondi accretion rate onto the merged \gls{bh} ($\dot{M}_{\rm BHL}$) as:
 \begin{multline}
@@ -679,7 +697,7 @@ With Virgo having joined the \gls{gw} detector network for \gls{o4}b, we expect 
 
 \section*{Acknowledgements}
 
-TC, AP, and LH acknowledge that this material is based upon work supported by NSF Grant No. 2308193. BO gratefully acknowledges support from the McWilliams Postdoctoral Fellowship at Carnegie Mellon University. BM \& KESF are supported by NSF AST-2206096 and NSF AST-1831415 and Simons Foundation Grant 533845 as well as Simons Foundation sabbatical support. The Flatiron Institute is supported by the Simons Foundation. AP thanks Rosalba Perna, Armin Rest, and Stephen Smartt for useful discussion.
+TC, AP, and LH acknowledge that this material is based upon work supported by NSF Grant No. 2308193. BO gratefully acknowledges support from the McWilliams Postdoctoral Fellowship at Carnegie Mellon University. BM \& KESF are supported by NSF AST-2206096 and NSF AST-1831415 and Simons Foundation Grant 533845 as well as Simons Foundation sabbatical support. The Flatiron Institute is supported by the Simons Foundation. AP thanks Rosalba Perna, Armin Rest, and Stephen Smartt for useful discussion. This work was supported by the Deutsche Forschungsgemeinschaft (DFG, German Research Foundation) under Germany's Excellence Strategy – EXC-2094 – 390783311.
 
 This research used resources of the National Energy Research Scientific Computing Center, a DOE Office of Science User Facility supported by the Office of Science of the U.S.
 Department of Energy under Contract No. DE-AC02-05CH11231 using NERSC award HEP-ERCAP0029208 and HEP-ERCAP0022871. This work used resources on the Vera Cluster at the Pittsburgh Supercomputing Center (PSC).
@@ -743,10 +761,9 @@ SWarp \citep{bertinTERAPIXPipeline2002}
 
 This section contains light curves (Figures~\ref{fig:light_curves_other}-\ref{fig:light_curves_other.3}) and spectra (Figure~\ref{fig:plot_spectra_other}) for all candidates other than AT 2023aagj.
 
-For some transients we took additional data with the \gls{3kk} \citep{2016SPIE.9908E..44L} at the 2.1m-Fraunhofer Wendelstein Telescope \citep{2014SPIE.9145E..2DH} located in the German alps.
-The instrument is capable of taking three images at the same time in two optical passbands and one \glspl{nir} band.
+For some transients we collected additional data with the \gls{3kk} \citep{2016SPIE.9908E..44L} at the 2.1m-Fraunhofer Wendelstein Telescope \citep{2014SPIE.9145E..2DH} located in the German alps.
+The instrument takes three images at the same time in two optical passbands and one \gls{nir} band.
 For the monitoring of the transients we used the $g$, $i$ and $J$ bands.
-The data were reduced with a pipeline developed at the University Observatory Munich.
 For the detrending of the images the pipeline makes use of the tools from \cite{2002A&A...381.1095G}.
 Then the images are calibrated and coadded using \texttt{SExtractor} \citep{1996A&AS..117..393B}, \texttt{SCAMP} \citep{2006ASPC..351..112B} and \texttt{SWarp} \citep{2002ASPC..281..228B}, difference photometry is conducted with \gls{sfft} \citep{huImageSubtractionFourier2022}, and extinction corrections are applied as described in \S\ref{subsec:autovet}.
 During this process, the astrometric solution is computed against the \textit{Gaia} EDR3 catalog \citep{gaiacollaborationGaiaMission2016, 2021A&A...649A...1G} and the zero points for the optical bands are calibrated with the \glspl{ps1} catalog \citep{2013ApJS..205...20M}.
